@@ -204,3 +204,77 @@ button.northstar-cell:not(:disabled):hover { background: #44788a; }
 .northstar-board .actions, .northstar-report { grid-column: 1 / -1; }
 .northstar-report { margin: 0; color: var(--muted); }
 .northstar-report:empty { display: none; }
+
+.paper.iron-paper { display: block; background: #16333e; padding: clamp(6px, 2vw, 14px); }
+#board.iron-board { display: grid; gap: .75rem; width: 100%; aspect-ratio: auto; }
+.iron-map { position: relative; border-radius: .6rem; overflow: hidden; }
+.iron-map svg { display: block; width: 100%; height: auto; aspect-ratio: 944 / 618; touch-action: pan-x pan-y; user-select: none; -webkit-user-select: none; }
+.iron-map.zoomed svg { touch-action: none; }
+.iron-map .sea { fill: #a9c9d4; }
+.iron-map .land { fill: #eadfc2; stroke: #8f7d5e; stroke-width: 1.2; }
+.iron-map .lake { fill: #a9c9d4; stroke: #8fa9b2; stroke-width: .8; }
+.iron-map .border { fill: none; stroke: #a8936c; stroke-width: 1; stroke-dasharray: 4 3; }
+.iron-map .route .hit { stroke: transparent; stroke-width: 18; fill: none; pointer-events: stroke; cursor: pointer; }
+.iron-map .route .out { fill: none; stroke: #2c241b; stroke-width: 8.5; }
+.iron-map .route .car { fill: none; stroke-width: 6; }
+.iron-map .route.claimed .out { stroke: #fff; stroke-width: 9.5; }
+.iron-map .route.claimed .car { stroke-width: 7; }
+.iron-map .route.blocked { opacity: .28; }
+.iron-map .route.sel .out { stroke: #ffcf3f; stroke-width: 12; }
+.iron-map .city circle { fill: #fffaf0; stroke: #3a2f22; stroke-width: 2; pointer-events: none; }
+.iron-map .city.hi circle { fill: #ffcf3f; stroke: #7a3d00; stroke-width: 2.5; }
+.iron-map .city.done circle { fill: #8fd6a5; }
+.iron-map .city text { font: 700 10.5px ui-rounded, system-ui, sans-serif; fill: #2b2218; paint-order: stroke; stroke: #faf4e6e6; stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.iron-map .city.hi text { font-weight: 900; fill: #7a3d00; }
+.iron-zoom { position: absolute; right: .4rem; bottom: .4rem; display: flex; gap: .3rem; }
+.iron-zoom button { min-width: 44px; padding: .3rem .5rem; background: #152d36e6; }
+.iron-banner { margin: 0; padding: .5rem .75rem; border-radius: .6rem; background: #5a3b1a; color: #ffe2a8; font-weight: 750; }
+.iron-panel { display: grid; gap: .6rem; }
+.iron-panel h3 { margin: .3rem 0 0; font-size: 1rem; }
+.iron-panel h4 { margin: .6rem 0 .3rem; }
+.iron-instruction { margin: 0; font-weight: 650; }
+.iron-choose, .iron-claim, .iron-results { display: grid; gap: .5rem; padding: .75rem; border: 1px solid var(--border); border-radius: .75rem; background: #1a343d; }
+.iron-claim h3, .iron-claim p { margin: 0; }
+.iron-market { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.iron-card {
+  position: relative; display: grid; place-items: center; align-content: center; gap: 2px; min-width: 0; min-height: 60px;
+  padding: 4px 2px; border: 2px solid #ffffff40; border-radius: .55rem; background: var(--cc); color: var(--ct);
+  font-size: .72rem; font-weight: 800; overflow-wrap: anywhere; text-align: center;
+}
+.iron-card .sym { font-size: 1.2rem; line-height: 1; }
+.iron-card.loco { background: conic-gradient(from 30deg, #d83a3a, #ef8a24, #f2cf2e, #2f9e57, #2f6fdb, #8c55d6, #d83a3a); color: #fff; text-shadow: 0 1px 2px #000b; }
+.iron-card.deck { background: repeating-linear-gradient(135deg, #4a3c2c 0 6px, #3b3023 6px 12px); color: #e8b04b; }
+.iron-card.empty { background: #ffffff0a; border-style: dashed; color: var(--muted); }
+.iron-card .n { position: absolute; top: 3px; right: 5px; font-size: .65rem; }
+.iron-card:disabled { opacity: .4; }
+.iron-hand { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; }
+.iron-hand .iron-card { min-height: 52px; }
+.iron-hand .iron-card.zero { opacity: .22; }
+.iron-hand .iron-card b { font-size: .95rem; }
+@media (max-width: 420px) { .iron-hand { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.iron-tickets { display: grid; gap: 6px; }
+.iron-ticket {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .5rem; min-height: 44px;
+  padding: .45rem .6rem; border: 1px solid #c9b48a; border-radius: .6rem; background: #f3e8cf; color: #2b2218; text-align: left;
+}
+.iron-ticket b { display: block; font-size: .85rem; }
+.iron-ticket small { color: #6c5b40; font-size: .72rem; }
+.iron-ticket .pts { min-width: 34px; padding: 6px 7px; border-radius: 8px; background: #2b2218; color: #f3e8cf; font: 900 .85rem/1 ui-monospace, monospace; text-align: center; }
+.iron-ticket.done { background: #cdebd3; }
+.iron-ticket.done .pts { background: #1f7a3c; }
+.iron-ticket.lost { background: #e9c8c0; }
+.iron-ticket.sel { box-shadow: 0 0 0 3px #e8b04b; }
+.iron-ticket.pick { grid-template-columns: auto minmax(0, 1fr) auto; margin: 0; cursor: pointer; font-weight: 400; }
+.iron-ticket.pick input { width: 22px; min-height: 22px; height: 22px; accent-color: #b8322a; }
+.iron-more summary { color: var(--muted); }
+.iron-route-list { display: grid; gap: 4px; max-height: 16rem; overflow: auto; }
+.iron-route-list button { display: flex; align-items: center; gap: .5rem; text-align: left; font-weight: 650; }
+.iron-route-list small { margin-left: auto; }
+.pip { display: inline-block; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--cc); border: 1px solid #fff6; }
+.iron-rivals { margin: 0; padding: 0; list-style: none; font-size: .9rem; }
+.iron-rivals li { margin: .2rem 0; }
+.iron-rivals b, .iron-log b { color: inherit; }
+.iron-log { margin: 0; padding-left: 1.1rem; font-size: .9rem; color: var(--muted); }
+.iron-results table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.iron-results th, .iron-results td { padding: .35rem .3rem; border-bottom: 1px solid var(--border); text-align: right; }
+.iron-results th:first-child, .iron-results td:first-child { text-align: left; }

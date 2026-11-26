@@ -282,7 +282,7 @@ test('Northstar keeps fleets private while validating deployment, shots and reco
     await send(players[seat], 'move', { round: 1, seq, data });
     const msg = players[seat].messages.at(-1);
     if (accepted) {
-      assert.equal(msg.t, 'northstar');
+      assert.equal(msg.t, 'state');
       assert.equal(msg.seq, seq++);
     } else assert.equal(msg.code, 'bad_request');
     return msg.view;
@@ -317,4 +317,48 @@ test('Northstar keeps fleets private while validating deployment, shots and reco
   await send(peer, 'rematch');
   assert.equal(peer.messages.at(-1).round, 2);
   assert.equal(peer.messages.at(-1).view.stage, 'deployment');
+});
+
+test('Iron Routes sends each seat only its own hand and accepts simultaneous ticket choices', async () => {
+  const context = roomContext();
+  const sockets = [];
+  context.getWebSockets = () => sockets;
+  const room = new GameRoom(context, {});
+  const ids = Array.from({ length: 3 }, () => crypto.randomUUID());
+  await room.initialize(ids[0], 'iron_routes', {});
+  assert.equal(room.info().maxSeats, 5);
+  const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
+  const players = ids.map(() => socket(sockets));
+  for (const [seat, ws] of players.entries()) await send(ws, 'hello', { clientId: ids[seat] });
+  await send(players[0], 'start');
+  const views = players.map(ws => ws.messages.at(-1).view);
+  assert.equal(players[0].messages.at(-1).seed, null);
+  assert.ok(views.every((view, seat) => view.me.pending.length === 3 && view.setup && view.players[seat].cards === 4));
+  assert.notDeepEqual(views[0].me.pending, views[1].me.pending);
+  for (const view of views) assert.ok(view.players.every(player => !('hand' in player) && !('pending' in player)));
+
+  // Every seat answers from the same starting seq. The server orders them and accepts all three.
+  for (const [seat, ws] of players.entries()) {
+    await send(ws, 'move', { round: 1, seq: 1, data: { action: 'tickets', keep: views[seat].me.pending.slice(0, 2) } });
+  }
+  const after = players.map(ws => ws.messages.at(-1));
+  assert.ok(after.every(msg => msg.t === 'state' && msg.seq === 3));
+  assert.equal(after[0].view.setup, false);
+  assert.equal(after[0].view.turn, 0);
+  assert.deepEqual(after[1].view.me.tickets, views[1].me.pending.slice(0, 2));
+
+  await send(players[1], 'move', { round: 1, seq: 4, data: { action: 'draw', source: 'deck' } });
+  assert.equal(players[1].messages.at(-1).code, 'bad_request');
+  await send(players[0], 'move', { round: 1, seq: 4, data: { action: 'draw', source: 'deck' } });
+  assert.equal(players[2].messages.at(-1).view.players[0].cards, 5);
+  assert.equal(players[2].messages.at(-1).view.phase, 'draw2');
+
+  const peer = socket(sockets);
+  await send(peer, 'hello', { clientId: ids[0] });
+  const welcome = peer.messages[0];
+  assert.deepEqual(welcome.log, []);
+  assert.equal(welcome.view.me.tickets.length, 2);
+  assert.equal(Object.values(welcome.view.me.hand).reduce((a, b) => a + b, 0), 5);
+  await send(peer, 'rematch');
+  assert.equal(peer.messages.at(-1).code, 'bad_request');
 });

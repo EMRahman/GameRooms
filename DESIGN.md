@@ -30,9 +30,9 @@ playable pilot, anyone can deploy their own copy on a free Cloudflare account.
 | fourfold | 2 | Open | Relay (phase 2) |
 | go | 2 | Open | Relay (phase 2) |
 | memory_match | up to 5 | Open (seed-derived deck) | Relay (phase 2) |
-| northstar | 2 | Hidden fleets | Phase 4 (first authoritative pilot) |
+| northstar | 2 | Hidden fleets | Authoritative (shipped) |
 | landlord | up to 6 | Hidden hands | Phase 4 (authoritative) |
-| iron_routes | 3-5 | Hidden hands | Phase 4 (authoritative) |
+| iron_routes | 2-5 | Hidden hands and tickets | Authoritative (shipped) |
 | conquest | 2-6 | Hidden info | Phase 4 (authoritative) |
 
 Single-player games (snake, pocket_snake, driftbelt, linefall) remain only in `Games`.
@@ -382,6 +382,20 @@ Add server-side rule enforcement without changing the transport:
 3. Start with `northstar` as the first authoritative pilot (2 players, simple grid
    and hidden-fleet rules), then bring online `landlord`, `iron_routes` and
    `conquest`.
+
+**Implemented authoritative path.** `worker/authoritative.js` registers each
+server-run game as `{make(roundSeats), apply(state, seat, move), view(state, seat),
+finished(state)}`. On `start`/`rematch` the room stores `make()` in `room.state`
+and sends `seed: null`, because server-side shuffles use `crypto.getRandomValues`
+and must not be reproducible from a shared seed. Each accepted move increments
+`seq` and sends every seat `{t: "state", round, seq, view}` with its own view. The
+move log stays empty, so a reconnecting client rebuilds from `welcome.view`.
+Authoritative moves skip the `seq === expectedSeq` check because the server
+validates them against its own state. Simultaneous moves, such as every
+Iron Routes player choosing starting tickets at once, all succeed in arrival order.
+Rematch requires `finished(state)`. Northstar and Iron Routes use this path. The
+online versions have no computer opponents, because those depend on timers that
+would keep a room from hibernating.
 
 Because games already separate pure deterministic rules from rendering in phases
 1-2, step 1 requires no transport rewrite.
