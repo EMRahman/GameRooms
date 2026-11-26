@@ -7,6 +7,8 @@ import { MEMORY_LEVELS, makeMemoryBoard, flipCard, memoryWinner } from './memory
 import { drawMemory } from './memory-board.js';
 import { drawNorthstar } from './northstar-board.js';
 import { drawIronRoutes } from './iron-routes-board.js';
+import { ROUND_CHOICES } from './landlord-rules.js';
+import { drawLandlord } from './landlord-board.js';
 
 const $ = id => document.getElementById(id);
 const inviteCode = new URLSearchParams(location.search).get('room')?.trim().toUpperCase();
@@ -48,6 +50,10 @@ const games = {
     players: '2–5 players',
     subtitle: 'Find matching pairs',
     rules: 'Flip two cards. Find a pair to score and go again. A miss passes the turn.',
+    setting: {
+      key: 'level', label: 'Table size',
+      choices: Object.entries(MEMORY_LEVELS).map(([key, level]) => [level.label, key]),
+    },
     make: makeMemoryBoard,
     move: flipCard,
     result: memoryWinner,
@@ -75,11 +81,23 @@ const games = {
       : view.me?.pending.length ? 'Choose your starting tickets' : 'Waiting for others to choose tickets',
     draw: (container, view, submit, seat, nameOf) => drawIronRoutes(container, seat, submit, nameOf),
   },
+  landlord: {
+    title: 'Landlord',
+    players: '2–6 players',
+    subtitle: 'Property trading · 2–6 players',
+    rules: 'Roll, move and buy streets. Unbought property goes to auction. Own a whole colour group to build houses and charge more rent. Trade on your turn. Bankrupt players are out; the richest player when time runs out wins.',
+    authoritative: true,
+    setting: { key: 'rounds', label: 'Game length', choices: ROUND_CHOICES.map(n => [`${n} rounds`, n]) },
+    result: view => view.over ? view.winner : undefined,
+    status: (view, seat) => view.trade ? (view.turn === seat ? 'A trade offer for you' : 'Trade offer waiting')
+      : view.auction ? (view.turn === seat ? 'Your bid' : 'Auction in progress') : undefined,
+    draw: (container, view, submit, seat, nameOf) => drawLandlord(container, seat, submit, nameOf),
+  },
 };
 
 const pageGame = location.pathname.split('/').pop().replace(/\.html$/, '');
 // The chosen size and table are remembered per page visit; each game falls back to its first option.
-const chosen = { size: games.dots_and_boxes.sizes[0], level: Object.keys(MEMORY_LEVELS)[0] };
+const chosen = { size: games.dots_and_boxes.sizes[0], level: Object.keys(MEMORY_LEVELS)[0], rounds: 25 };
 
 function pickOption(container, options, value, onPick) {
   container.replaceChildren(...options.map(([label, option]) => {
@@ -111,11 +129,13 @@ function renderSetup() {
   if (meta.sizes) {
     pickOption($('size-options'), meta.sizes.map(size => [`${size} × ${size}`, size]), chosen.size, value => { chosen.size = value; });
   }
-  $('level-field').hidden = game !== 'memory_match';
-  if (game === 'memory_match') {
-    pickOption($('level-options'), Object.entries(MEMORY_LEVELS).map(([key, level]) => [level.label, key]), chosen.level, value => { chosen.level = value; });
+  const { setting } = meta;
+  $('level-field').hidden = !setting;
+  if (setting) {
+    $('level-label').textContent = setting.label;
+    pickOption($('level-options'), setting.choices, chosen[setting.key], value => { chosen[setting.key] = value; });
   }
-  $('no-options').hidden = Boolean(meta.sizes) || game === 'memory_match';
+  $('no-options').hidden = Boolean(meta.sizes || setting);
   $('create-button').textContent = `Create ${meta.title} room`;
 }
 
@@ -194,7 +214,8 @@ $('create').onsubmit = async event => {
     if (key) headers['X-Owner-Key'] = key;
     const options = {};
     if (games[game].sizes) options.size = chosen.size;
-    if (game === 'memory_match') options.level = chosen.level;
+    const { setting } = games[game];
+    if (setting) options[setting.key] = chosen[setting.key];
     const res = await fetch('/api/rooms', {
       method: 'POST', headers,
       body: JSON.stringify({ game, clientId: id(), options }),
@@ -358,6 +379,8 @@ function enterRoom(code) {
     $('paper').classList.toggle('northstar-paper', game === 'northstar');
     container.classList.toggle('iron-board', game === 'iron_routes');
     $('paper').classList.toggle('iron-paper', game === 'iron_routes');
+    container.classList.toggle('landlord-board', game === 'landlord');
+    $('paper').classList.toggle('landlord-paper', game === 'landlord');
     const nameOf = index => players.find(player => player.seat === index)?.name ?? `Player ${index + 1}`;
     renderBoard = games[game].draw?.(container, board, submitMove, seat, nameOf) ?? drawDots(container, board.size);
   }

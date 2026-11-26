@@ -132,7 +132,7 @@ export default {
       return json(await env.BUDGET.getByName('rooms').stats());
     }
 
-    if (request.method === 'GET' && /^\/(dots_and_boxes|fourfold|go|memory_match|northstar|iron_routes)(\.html)?$/.test(pathname)) {
+    if (request.method === 'GET' && /^\/(dots_and_boxes|fourfold|go|memory_match|northstar|iron_routes|landlord)(\.html)?$/.test(pathname)) {
       return env.ASSETS.fetch(new URL('/', url));
     }
 

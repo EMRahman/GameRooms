@@ -2,13 +2,18 @@ import { validLine } from '../public/dots-rules.js';
 import { validDrop } from '../public/fourfold-rules.js';
 import { GO_SIZES, goMoveData } from '../public/go-rules.js';
 import { MEMORY_LEVELS, validFlip } from '../public/memory-rules.js';
+import { ROUND_CHOICES } from '../public/landlord-rules.js';
 
 export const defaultGame = 'dots_and_boxes';
-export const maxSeats = game => ({ memory_match: 5, iron_routes: 5 })[game] ?? 2;
+export const maxSeats = game => ({ memory_match: 5, iron_routes: 5, landlord: 6 })[game] ?? 2;
 export const clientIdValid = id => typeof id === 'string' && /^[a-f0-9-]{36}$/i.test(id);
 
 export function roomOptions(game, options) {
   if (game === 'fourfold' || game === 'northstar' || game === 'iron_routes') return {};
+  if (game === 'landlord') {
+    const rounds = options?.rounds ?? 25;
+    return ROUND_CHOICES.includes(rounds) ? { rounds } : null;
+  }
   if (game === 'memory_match') {
     const level = options?.level ?? 'easy';
     return typeof level === 'string' && Object.hasOwn(MEMORY_LEVELS, level) ? { level } : null;
