@@ -13,17 +13,14 @@ permissions:
 
 concurrency:
   group: github-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     # Copies made with the Deploy to Cloudflare button get this workflow too;
     # only the original repository publishes to GitHub Pages.
     if: github.repository == 'EMRahman/GameRooms'
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -45,6 +42,14 @@ jobs:
         with:
           path: public
 
+  deploy:
+    needs: build
+    if: github.repository == 'EMRahman/GameRooms'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy website
         id: deployment
         uses: actions/deploy-pages@v4
