@@ -99,11 +99,32 @@ export class Budget extends DurableObject {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const origin = request.headers.get('Origin');
+    const github = url.hostname === 'gamerooms.ehsanr-web.workers.dev' && origin === 'https://emrahman.github.io';
+    if (github && request.method === 'OPTIONS' && url.pathname.startsWith('/api/')) {
+      return new Response(null, { status: 204, headers: {
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Owner-Key',
+        'Vary': 'Origin',
+      } });
+    }
+    const response = await handleRequest(request, env, github);
+    if (!github || response.status === 101) return response;
+    const headers = new Headers(response.headers);
+    headers.set('Access-Control-Allow-Origin', origin);
+    headers.append('Vary', 'Origin');
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  },
+};
+
+async function handleRequest(request, env, github) {
+    const url = new URL(request.url);
     const { pathname } = url;
     const origin = request.headers.get('Origin');
     const upgrade = request.headers.get('Upgrade')?.toLowerCase() === 'websocket';
 
-    if ((origin && origin !== url.origin) || (upgrade && origin !== url.origin)) return json({ error: 'Forbidden' }, 403);
+    if ((origin && origin !== url.origin && !github) || (upgrade && origin !== url.origin && !github)) return json({ error: 'Forbidden' }, 403);
 
     if (pathname === '/api/rooms' && request.method === 'POST') {
       let body;
@@ -144,5 +165,4 @@ export default {
       return info ? json(info) : json({ error: 'Room not found' }, 404);
     }
     return json({ error: 'Not found' }, 404);
-  },
-};
+}

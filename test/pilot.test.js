@@ -527,3 +527,19 @@ test('room stats count today\'s rooms and the rooms with someone connected', asy
   assert.equal(stats.remaining, 2);
   assert.equal(stats.inUse, 1);
 });
+
+test('GitHub Pages can access production rooms while other origins remain blocked', async () => {
+  const endpoint = 'https://gamerooms.ehsanr-web.workers.dev/api/stats';
+  const env = { BUDGET: { getByName: () => ({ stats: async () => ({ remaining: 5 }) }) } };
+  const headers = { Origin: 'https://emrahman.github.io' };
+  const preflight = await worker.fetch(new Request(endpoint, { method: 'OPTIONS', headers }), env);
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get('access-control-allow-origin'), headers.Origin);
+  const response = await worker.fetch(new Request(endpoint, { headers }), env);
+  assert.equal(response.headers.get('access-control-allow-origin'), headers.Origin);
+  assert.equal((await response.json()).remaining, 5);
+  const denied = await worker.fetch(new Request(endpoint, { headers: { Origin: 'https://example.com' } }), env);
+  assert.equal(denied.status, 403);
+  const otherDeployment = await worker.fetch(new Request('https://other.workers.dev/api/stats', { headers }), env);
+  assert.equal(otherDeployment.status, 403);
+});

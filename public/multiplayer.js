@@ -12,6 +12,10 @@ import { drawLandlord } from './landlord-board.js';
 import { ROUND_CHOICES as CONQUEST_ROUNDS } from './conquest-rules.js';
 import { drawConquest } from './conquest-board.js';
 
+const apiOrigin = location.origin === 'https://emrahman.github.io' && location.pathname.startsWith('/GameRooms/')
+  ? 'https://gamerooms.ehsanr-web.workers.dev' : location.origin;
+const apiUrl = path => new URL(path, apiOrigin);
+
 const $ = id => document.getElementById(id);
 const inviteCode = new URLSearchParams(location.search).get('room')?.trim().toUpperCase();
 const codePattern = /^[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5}$/;
@@ -197,7 +201,7 @@ function inviteUrl(code) {
 // Shows how many rooms are left today and how many are in use right now.
 async function loadRoomStats() {
   try {
-    const stats = await (await fetch('/api/stats', { cache: 'no-store' })).json();
+    const stats = await (await fetch(apiUrl('/api/stats'), { cache: 'no-store' })).json();
     const resets = new Date(stats.resetsAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
     $('room-stats').textContent = stats.remaining > 0
       ? `${stats.remaining} of ${stats.dailyLimit} rooms left today · ${stats.inUse} in use`
@@ -232,7 +236,7 @@ $('create').onsubmit = async event => {
     if (games[game].sizes) options.size = chosen.size;
     const { setting } = games[game];
     if (setting) options[setting.key] = chosen[setting.key];
-    const res = await fetch('/api/rooms', {
+    const res = await fetch(apiUrl('/api/rooms'), {
       method: 'POST', headers,
       body: JSON.stringify({ game, clientId: id(), options }),
     });
@@ -508,7 +512,7 @@ function enterRoom(code) {
     let response;
     checkingRoom = true;
     try {
-      response = await fetch(`/api/rooms/${code}`);
+      response = await fetch(apiUrl(`/api/rooms/${code}`));
     } catch {
       // Retry after a temporary network failure.
     } finally {
@@ -521,7 +525,7 @@ function enterRoom(code) {
       return;
     }
     if (!response?.ok) return retry();
-    const url = new URL(`/api/rooms/${code}/ws`, location.href);
+    const url = apiUrl(`/api/rooms/${code}/ws`);
     url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     ws = new WebSocket(url);
     ws.onopen = () => {

@@ -3,6 +3,8 @@
 Play Dots and Boxes, Fourfold, Go, Memory Match, Northstar, Iron Routes, Landlord, or Conquest in your browser. Create a room and send a friend the invite
 link or let them scan its QR code.
 
+Play on [Cloudflare](https://gamerooms.ehsanr-web.workers.dev/) or [GitHub Pages](https://emrahman.github.io/GameRooms/). Both use the Cloudflare Worker for rooms and share its room limits.
+
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2FEMRahman%2FGameRooms)
 
 The button deploys the game pages, API and two SQLite-backed Durable Objects as
