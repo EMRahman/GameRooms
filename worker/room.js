@@ -223,7 +223,7 @@ export class GameRoom extends DurableObject {
     room.round++;
     room.seq = 0;
     room.seed = rules ? null : crypto.getRandomValues(new Uint32Array(1))[0];
-    if (rules) room.state = rules.make(roster);
+    if (rules) room.state = rules.make(roster, room.options);
     this.room = room;
     const started = { t: 'started', round: room.round, seed: room.seed, options: room.options, roundSeats: room.roundSeats, players: this.players(room) };
     if (rules) this.sendViews(room, started);

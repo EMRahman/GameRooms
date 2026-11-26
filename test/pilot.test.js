@@ -361,6 +361,35 @@ test('Iron Routes sends each seat only its own hand and accepts simultaneous tic
   assert.equal(peer.messages.at(-1).code, 'bad_request');
 });
 
+test('Landlord runs on the server with the chosen game length and hides deck order', async () => {
+  const context = roomContext();
+  const sockets = [];
+  context.getWebSockets = () => sockets;
+  const room = new GameRoom(context, {});
+  const ids = Array.from({ length: 3 }, () => crypto.randomUUID());
+  await room.initialize(ids[0], 'landlord', { rounds: 15 });
+  assert.equal(room.info().maxSeats, 6);
+  const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
+  const players = ids.map(() => socket(sockets));
+  for (const [seat, ws] of players.entries()) await send(ws, 'hello', { clientId: ids[seat] });
+  await send(players[0], 'start');
+  const started = players[1].messages.at(-1);
+  assert.equal(started.t, 'started');
+  assert.equal(started.seed, null);
+  assert.equal(started.view.rounds, 15);
+  assert.equal(started.view.me, 1);
+  assert.equal(started.view.turn, 0);
+  assert.equal(started.view.decks, undefined);
+
+  await send(players[1], 'move', { round: 1, seq: 1, data: { action: 'roll' } });
+  assert.equal(players[1].messages.at(-1).code, 'bad_request');
+  await send(players[0], 'move', { round: 1, seq: 1, data: { action: 'roll' } });
+  const after = players[2].messages.at(-1);
+  assert.equal(after.t, 'state');
+  assert.equal(after.view.rolled, 1);
+  assert.ok(after.view.dice.every(die => die >= 1 && die <= 6));
+});
+
 
 test('End game and leave return the room to the lobby without replaying old moves', async () => {
   const context = roomContext();

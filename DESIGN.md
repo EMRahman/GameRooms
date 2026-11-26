@@ -31,7 +31,7 @@ playable pilot, anyone can deploy their own copy on a free Cloudflare account.
 | go | 2 | Open | Relay (phase 2) |
 | memory_match | up to 5 | Open (seed-derived deck) | Relay (phase 2) |
 | northstar | 2 | Hidden fleets | Authoritative (shipped) |
-| landlord | up to 6 | Hidden hands | Phase 4 (authoritative) |
+| landlord | 2-6 | Deck order only | Authoritative (shipped) |
 | iron_routes | 2-5 | Hidden hands and tickets | Authoritative (shipped) |
 | conquest | 2-6 | Hidden info | Phase 4 (authoritative) |
 
@@ -393,7 +393,9 @@ move log stays empty, so a reconnecting client rebuilds from `welcome.view`.
 Authoritative moves skip the `seq === expectedSeq` check because the server
 validates them against its own state. Simultaneous moves, such as every
 Iron Routes player choosing starting tickets at once, all succeed in arrival order.
-Rematch requires `finished(state)`. Northstar and Iron Routes use this path. The
+Rematch requires `finished(state)`. Northstar, Iron Routes and Landlord use this path.
+Landlord runs on the server so dice and card draws cannot be forged; every game is
+timed (15, 25 or 40 rounds) because an untimed game can exceed the 2,000-message room limit. The
 online versions have no computer opponents, because those depend on timers that
 would keep a room from hibernating.
 
