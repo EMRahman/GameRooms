@@ -120,7 +120,8 @@ export function drawLandlord(container, seat, submit, nameOf) {
     return `<button type="button" class="${primary ? 'primary' : danger ? 'danger' : ''}" data-act="${act}" ${data} ${disabled ? 'disabled' : ''}>${label}</button>`;
   }
 
-  function actionsHTML(view, my) {
+  // `my`: this seat is the one that must act. `active`: this seat may send moves at all.
+  function actionsHTML(view, my, active) {
     const me = view.me;
     const p = view.players[view.cur];
     if (view.over) {
@@ -129,7 +130,7 @@ export function drawLandlord(container, seat, submit, nameOf) {
         <p>${view.over.reason === 'time' ? `Time’s up after ${view.rounds} rounds. Final net worth:` : 'Every rival has gone bankrupt.'}</p>
         <ol class="ll-standings">${ranks.map(k => `<li>${token(view, k)}<b>${esc(pidName(view, k))}</b><span>${view.players[k].out ? 'Bankrupt' : money(view.players[k].worth)}</span></li>`).join('')}</ol></section>`;
     }
-    if (view.trade) return offerHTML(view, my);
+    if (view.trade) return offerHTML(view, my, active);
     if (view.auction) return auctionHTML(view, my);
     if (view.cur !== me) return `<p class="ll-instruction">${esc(pidName(view, view.cur))} is playing. Tap any space to see its deed.</p>`;
     let instr = '';
@@ -165,11 +166,12 @@ export function drawLandlord(container, seat, submit, nameOf) {
     return items.length ? `<ul>${items.join('')}</ul>` : '<p>Nothing</p>';
   }
 
-  function offerHTML(view, active) {
+  // The recipient answers on their turn; the proposer may withdraw while waiting.
+  function offerHTML(view, my, active) {
     const t = view.trade;
     const mine = view.me === t.to;
     let controls = `<p class="ll-instruction">Waiting for ${esc(pidName(view, t.to))} to answer.</p>`;
-    if (mine) controls = `<div class="actions">${btn('accept', 'Accept', { primary: true, disabled: !active })}${btn('decline', 'Decline', { disabled: !active })}</div>`;
+    if (mine) controls = `<div class="actions">${btn('accept', 'Accept', { primary: true, disabled: !my })}${btn('decline', 'Decline', { disabled: !my })}</div>`;
     else if (view.me === t.from) controls += `<div class="actions">${btn('withdraw', 'Withdraw offer', { disabled: !active })}</div>`;
     return `<section class="ll-box"><h3>Trade offer</h3><p>${esc(pidName(view, t.from))} ${mine ? 'offers you' : `offer${view.me === t.from ? '' : 's'} ${esc(pidName(view, t.to))}`} a trade.</p>
       <div class="ll-offer"><div><h4>${esc(pidName(view, t.to))} ${mine ? 'get' : 'gets'}</h4>${sideList(view, t.give, t.cg)}</div>
@@ -301,7 +303,7 @@ export function drawLandlord(container, seat, submit, nameOf) {
     // Keep focus on the control the player just used when the panel redraws.
     const focused = document.activeElement && panel.contains(document.activeElement) ? document.activeElement.dataset.act : null;
     const shownDeed = focus >= 0 ? focus : view.phase === 'buy' && !view.trade ? view.offer : view.auction ? view.auction.i : -1;
-    panel.innerHTML = nowHTML(view) + actionsHTML(view, my) + (draft ? tradeHTML(view) : '') +
+    panel.innerHTML = nowHTML(view) + actionsHTML(view, my, active) + (draft ? tradeHTML(view) : '') +
       (shownDeed >= 0 && !draft ? deedHTML(view, shownDeed, my) : '') + listHTML(view) + playersHTML(view) +
       `<details class="ll-log-wrap" open><summary>Game log</summary><ol class="ll-log">${view.log.toReversed().map(entry =>
         `<li class="${entry.p >= 0 ? `player-${view.seats[entry.p]}` : ''}">${logText(view, entry.text)}</li>`).join('')}</ol></details>`;
