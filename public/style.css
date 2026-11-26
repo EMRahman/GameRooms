@@ -66,12 +66,6 @@ summary { cursor: pointer; padding: .6rem .25rem; font-weight: 700; color: var(-
 #entry-actions { display: grid; gap: 1.25rem; }
 .game-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .game-grid .game-card { grid-column: auto; cursor: pointer; width: 100%; padding: 0; font: inherit; text-align: left; }
-.game-grid .game-card[aria-checked="true"] {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 2px rgba(92, 243, 255, .45), var(--shadow);
-  transform: translateY(-4px);
-}
-.game-grid .game-card[aria-checked="true"] .play-arrow { background: var(--blue); color: #061013; }
 .game-grid .game-card .game-art { height: 190px; }
 .game-grid .game-card .card-svg { max-height: 88%; }
 .lobby-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 21rem); gap: 1.25rem; align-items: start; }
@@ -131,7 +125,7 @@ summary { cursor: pointer; padding: .6rem .25rem; font-weight: 700; color: var(-
   .game-grid .game-card .game-art { height: clamp(190px, 60vw, 240px); }
 }
 @media (hover: hover) and (pointer: fine) {
-  .game-grid .game-card[aria-checked="false"]:hover { transform: translateY(-4px); }
+  .game-grid .game-card:hover { transform: translateY(-4px); }
 }
 
 
@@ -640,65 +634,92 @@ button.primary:not(:disabled):hover { background: #a4efd3; }
 .masthead .brand::before { content: "✦"; display: grid; place-items: center; width: 1.55rem; height: 1.55rem; border-radius: .5rem; background: var(--blue); color: #09211d; font: 900 1rem/1 ui-sans-serif, system-ui, sans-serif; }
 .intro {
   display: grid;
-  grid-template-columns: minmax(20rem, .9fr) minmax(0, 1.1fr);
-  grid-template-rows: 1fr auto auto 1fr;
-  grid-template-areas: ". art" "copy art" "actions art" ". art";
-  column-gap: clamp(1.5rem, 4vw, 3.5rem);
-  row-gap: 1.25rem;
-  margin: clamp(1.25rem, 3vw, 2.5rem) 0 1rem;
+  grid-template-columns: minmax(20rem, .95fr) minmax(0, 1.05fr);
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  margin: clamp(1.5rem, 4vw, 3rem) 0 1rem;
 }
-.intro-copy { grid-area: copy; }
 .intro h1 { font-size: clamp(2.75rem, 5.4vw, 5rem); line-height: .95; letter-spacing: -.05em; font-weight: 850; text-wrap: balance; }
-.intro-description { max-width: 31rem; margin: .9rem 0 0; color: #bfd0cf; font-size: clamp(1rem, 1.4vw, 1.15rem); line-height: 1.5; }
+.intro-description { max-width: 32rem; margin: 1rem 0 0; color: #bfd0cf; font-size: clamp(1rem, 1.4vw, 1.15rem); line-height: 1.55; text-wrap: pretty; }
 .intro-description strong { color: var(--blue); }
-.hero-art { grid-area: art; align-self: center; display: block; width: 100%; height: auto; border-radius: 1.4rem; border: 1px solid var(--line); }
-.entry-panels { grid-area: actions; display: grid; gap: .75rem; align-content: start; min-width: 0; }
+.intro-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: 1.6rem; }
+.hero-art { display: block; width: 100%; height: auto; border-radius: 1.4rem; border: 1px solid var(--line); }
+.button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: .6rem 1.4rem; border: 1px solid var(--border); border-radius: 12px; font-weight: 750; text-decoration: none; transition: background .15s ease; }
+.button.primary { color: #09211d; background: var(--blue); border-color: var(--blue); }
+.button.primary:hover { background: #a4efd3; }
+.button:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+.join-row { display: grid; grid-template-columns: minmax(0, 9rem) auto; gap: .5rem; margin: 0; }
+.join-row input { min-height: 48px; font-size: 16px; letter-spacing: .12em; text-transform: uppercase; }
+.join-row input::placeholder { letter-spacing: normal; text-transform: none; }
+.join-row button { min-height: 48px; padding-inline: 1.1rem; }
+#room-stats { margin: .9rem 0 0; color: var(--muted); font-size: .84rem; }
 .panel, .game, .chat, .share { background: linear-gradient(145deg, rgba(20, 44, 54, .97), rgba(11, 29, 39, .99)); }
-.setup, .join-panel { display: grid; align-content: start; gap: .65rem; min-width: 0; padding: clamp(.8rem, 1.7vw, 1.2rem); }
-.action-title { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
-.action-title h2, .join-panel h2 { font-size: 1.2rem; line-height: 1.2; }
-.action-title p { margin: 0; color: var(--muted); font-size: .8rem; }
-.create-row, .join-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; align-items: center; }
-.create-row select { min-width: 0; }
-.create-row button, .join-row button { min-width: 7.2rem; white-space: nowrap; }
-.setup-details { border-top: 1px solid var(--line); padding-top: .25rem; }
-.setup-details summary { display: flex; align-items: center; justify-content: space-between; gap: .6rem; min-height: 38px; padding: .3rem 0; color: var(--muted); font-size: .86rem; list-style: none; }
-.setup-details summary::-webkit-details-marker { display: none; }
-.setup-details summary::after { content: "⌄"; color: var(--blue); font-size: 1.1rem; font-weight: 800; line-height: 1; transition: transform .2s ease; }
-.setup-details[open] summary::after { transform: rotate(180deg); }
-#create { scroll-margin-top: 1rem; }
-.setup-details[open] { padding-bottom: .2rem; }
-/* gap does not apply inside <details>, so space its children directly. */
-.setup-details > :not(summary) { margin: .85rem 0 0; }
-.setup-details > .name-row { margin-top: .35rem; }
-.setup-details > .owner { margin-top: .85rem; }
-.setup-head h3 { margin: 0; font-size: 1.1rem; }
-.setup-head .eyebrow { margin: 0 0 .25rem; }
-.setup-head .rules { margin: .35rem 0 0; font-size: .86rem; }
-.field-label { font-size: .68rem; }
-.segments { gap: 6px; }
-.segments button { flex: 1 1 auto; min-height: 38px; padding: .35rem .5rem; background: #0b1d27; }
-.owner { margin: 0; }
-.owner label { color: var(--muted); }
-#room-stats { margin: 0; color: var(--muted); font-size: .78rem; }
 #notice { margin: .4rem 0; }
 #invite { width: min(100%, 24rem); margin-top: clamp(1.25rem, 4vw, 2.5rem); padding: 1rem; border: 1px solid var(--line); border-radius: 1rem; background: linear-gradient(145deg, rgba(20, 44, 54, .97), rgba(11, 29, 39, .99)); }
 #invite h2 { font-size: 1.25rem; }
 #invite button { width: 100%; }
-select:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
-.game-picker { margin-top: clamp(1.25rem, 3vw, 2rem); }
+#invite .name-row, .sheet .name-row { display: grid; gap: .35rem; margin: 0; }
+#invite .name-row input, .sheet .name-row input { width: 100%; font-size: 16px; }
+.name-row label { color: var(--muted); font-size: .9rem; }
+
+/* Game library */
+.game-picker { margin-top: clamp(1.5rem, 4vw, 2.75rem); scroll-margin-top: 1rem; }
 .gallery-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; margin-bottom: .9rem; }
-.gallery-title { margin: 0; font-size: 1.25rem; }
+.gallery-title { margin: 0; font-size: 1.35rem; }
 .gallery-hint { margin: 0; color: var(--muted); font-size: .9rem; }
 .game-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .game-grid .game-card .game-art { height: 145px; }
 .game-grid .game-card .card-svg { max-height: 88%; }
 .game-grid .game-copy { flex: 1 1 auto; grid-template-rows: 1fr auto; }
-.game-grid .game-card[aria-checked="true"] { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(139, 228, 196, .38), var(--shadow); }
-.game-grid .game-card[aria-checked="true"] .play-arrow { background: var(--blue); color: #09211d; }
+.game-grid .game-card:active { transform: scale(.98); }
 @media (min-width: 1200px) {
   .game-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* Setup sheet: a centred dialog, or a bottom sheet on phones. */
+.sheet {
+  width: min(32rem, calc(100% - 2rem));
+  max-height: min(46rem, calc(100dvh - 2rem));
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: linear-gradient(160deg, #142c36, #0b1d27);
+  color: var(--ink);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
+}
+.sheet[open] { display: flex; }
+.sheet::backdrop { background: rgba(2, 9, 14, .72); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+html:has(.sheet[open]) { overflow: hidden; }
+.sheet form { position: relative; display: flex; flex-direction: column; gap: 0; width: 100%; min-height: 0; }
+.sheet-art { flex: none; height: clamp(120px, 22vh, 170px); border-bottom: 1px solid var(--line); }
+.sheet-art .game-art { height: 100%; }
+.sheet-art .card-svg { max-height: 90%; }
+.sheet-close { position: absolute; top: .75rem; right: .75rem; z-index: 5; width: 44px; height: 44px; padding: 0; border-radius: 50%; background: rgba(6, 15, 21, .7); font-size: 1rem; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.sheet-body { display: grid; gap: 1.1rem; padding: 1.25rem 1.4rem; overflow-y: auto; overscroll-behavior: contain; }
+.sheet .setup-head h2 { margin: 0; font-size: 1.6rem; letter-spacing: -.03em; }
+.sheet .setup-head .eyebrow { margin: 0 0 .35rem; }
+.sheet .setup-head .rules { margin: .5rem 0 0; font-size: .92rem; line-height: 1.5; }
+.sheet .field-label { font-size: .68rem; }
+.sheet .segments { gap: 6px; }
+.sheet .segments button { flex: 1 1 auto; min-height: 44px; padding: .35rem .5rem; background: #0b1d27; }
+.sheet .segments button[aria-checked="true"] { color: #09211d; background: var(--blue); border-color: var(--blue); }
+.sheet .field-note { margin: 0; font-size: .88rem; }
+.owner-details summary { min-height: 0; padding: 0; color: var(--muted); font-size: .86rem; font-weight: 650; }
+.owner-details summary:hover { color: var(--ink); }
+.owner-details .owner { display: grid; gap: .35rem; margin-top: .6rem; }
+.owner-details label { color: var(--muted); font-size: .9rem; }
+.owner-details input { font-size: 16px; }
+#create-notice { margin: 0; padding: .6rem .8rem; border-radius: .6rem; background: rgba(242, 156, 115, .14); color: #ffd2bf; font-weight: 650; }
+.sheet-foot { flex: none; padding: .9rem 1.4rem calc(.9rem + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: rgba(8, 23, 34, .6); }
+.sheet-foot button { width: 100%; min-height: 50px; font-size: 1.05rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .sheet[open] { animation: sheet-in .22s ease-out; }
+  .sheet[open]::backdrop { animation: fade-in .22s ease-out; }
+}
+@keyframes sheet-in { from { opacity: 0; transform: translateY(16px) scale(.98); } }
+@keyframes fade-in { from { opacity: 0; } }
+
 #room-title { margin: 0 0 1rem; font-size: clamp(1.7rem, 4vw, 2.7rem); }
 .intro[hidden] { display: none; }
 .site-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .35rem 1.5rem; margin-top: clamp(2rem, 5vw, 3.5rem); padding-top: 1.25rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
@@ -707,22 +728,13 @@ select:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
 .site-footer a:hover { text-decoration-color: currentColor; }
 .site-footer a:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; border-radius: 4px; }
 
-/* Tablets: tagline beside the art, create and join side by side underneath. */
 @media (max-width: 1023px) {
-  .intro {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-    grid-template-rows: auto;
-    grid-template-areas: "copy art" "actions actions";
-    align-items: center;
-  }
-  .entry-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
   .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-/* Phones: one column, actions right under the art. */
+/* Phones and narrow tablets: one column, art under the copy. */
 @media (max-width: 760px) {
-  .intro { grid-template-columns: 1fr; grid-template-areas: "copy" "art" "actions"; row-gap: .9rem; margin: 1rem 0 1.1rem; }
+  .intro { grid-template-columns: 1fr; gap: 1.25rem; margin: 1.1rem 0 .5rem; }
   .hero-art { width: min(560px, 100%); margin: 0 auto; }
-  .entry-panels { grid-template-columns: 1fr; gap: .65rem; }
   .game-grid { gap: 10px; }
   .game-grid .game-card .game-art { height: 125px; }
 }
@@ -731,27 +743,26 @@ select:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
   .masthead { min-height: 52px; }
   .masthead .brand { font-size: .86rem; }
   .intro h1 { font-size: clamp(2.5rem, 11.5vw, 3.6rem); }
-  .intro-description { margin-top: .55rem; font-size: .96rem; }
+  .intro-description { margin-top: .7rem; font-size: 1rem; }
+  .intro-actions { display: grid; grid-template-columns: 1fr; gap: .6rem; margin-top: 1.2rem; }
+  .join-row { grid-template-columns: minmax(0, 1fr) auto; }
   .hero-art { border-radius: 1rem; }
-  .setup, .join-panel { padding: .8rem .85rem; }
-  .action-title h2, .join-panel h2 { font-size: 1.08rem; }
-  .create-row, .join-row { grid-template-columns: minmax(0, 1fr) auto; gap: .45rem; }
-  .create-row button, .join-row button { min-width: 6.65rem; padding-inline: .7rem; font-size: .92rem; }
-  .create-row select, .join-row input { padding-inline: .6rem; }
-  /* 16px keeps iOS Safari from zooming into fields on focus. */
-  .create-row select, .join-row input, .name-row input, .owner input, #invite input { font-size: 16px; }
-  .name-row { gap: .35rem; }
-  .name-row input { width: 100%; }
-  .setup-details summary { min-height: 40px; font-size: .84rem; }
-  .gallery-title { font-size: 1.1rem; }
-  .gallery-hint { font-size: .82rem; }
+  .gallery-title { font-size: 1.2rem; }
+  .gallery-hint { font-size: .84rem; }
   /* Compact two-up cards: art, name and player count. */
-  .game-grid { gap: 10px; }
   .game-grid .game-card { border-radius: 16px; }
   .game-grid .game-card .game-art { height: clamp(84px, 27vw, 120px); }
   .game-grid .art-label, .game-grid .game-copy p, .game-grid .play-arrow, .game-grid .game-meta span + span { display: none; }
   .game-grid .game-copy { grid-template-columns: 1fr; gap: 7px; padding: 11px 12px 13px; }
   .game-grid .game-copy h3 { margin: 0; font-size: 15px; }
-  .game-grid .game-card[aria-checked="true"] { transform: none; }
+  /* Bottom sheet */
+  .sheet { width: 100%; max-width: 100%; max-height: 92dvh; margin: auto 0 0; border-width: 1px 0 0; border-radius: 22px 22px 0 0; }
+  .sheet-body { padding: 1.1rem 1.1rem 1.25rem; }
+  .sheet-foot { padding-inline: 1.1rem; }
+  .sheet .setup-head h2 { font-size: 1.4rem; }
   .site-footer { flex-direction: column; font-size: .84rem; }
 }
+@media (max-width: 560px) and (prefers-reduced-motion: no-preference) {
+  .sheet[open] { animation: sheet-up .26s cubic-bezier(.2, .8, .3, 1); }
+}
+@keyframes sheet-up { from { transform: translateY(100%); } }
