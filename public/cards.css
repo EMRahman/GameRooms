@@ -67,6 +67,12 @@
       background-image: linear-gradient(rgba(232, 176, 75, .06) 1px, transparent 1px), linear-gradient(90deg, rgba(232, 176, 75, .06) 1px, transparent 1px);
       background-size: 24px 24px;
     }
+.art-conquest { --card-bg: radial-gradient(circle at 40% 30%, #132a46, #0a1626 72%); }
+.art-conquest::before {
+      inset: 0;
+      background-image: linear-gradient(rgba(170, 205, 245, .06) 1px, transparent 1px), linear-gradient(90deg, rgba(170, 205, 245, .06) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
 .art-landlord { --card-bg: radial-gradient(circle at 45% 38%, #1f5b46, #0a261d 72%); }
 .art-landlord::before {
       inset: 0;

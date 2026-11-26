@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import { defaultGame, clientIdValid, maxSeats, roomMove } from './protocol.js';
+import { defaultGame, clientIdValid, maxSeats, roomMove, messageLimit } from './protocol.js';
 import { authoritative } from './authoritative.js';
 
 const hour = 3600000;
@@ -125,6 +125,7 @@ export class GameRoom extends DurableObject {
         const roster = room.roundSeats ?? room.seats.flatMap((player, seat) => player ? [seat] : []);
         if (!host || roster.length < 2 || connected.length !== roster.length ||
             (msg.t === 'start') !== (room.phase === 'lobby')) return error('bad_request');
+        if (room.count >= messageLimit(room.game)) return error('room_limit');
         const rules = authoritative[room.game];
         if (rules && msg.t === 'rematch' && !rules.finished(room.state)) return error('bad_request');
         this.startRound(room, roster);
@@ -142,11 +143,12 @@ export class GameRoom extends DurableObject {
         // The server validates authoritative moves against its own state, so a stale `seq`
         // (for example two players choosing tickets at once) is harmless there.
         if (msg.round !== room.round || (!rules && msg.seq !== room.seq + 1)) return send(ws, { t: 'error', code: 'seq_mismatch', expectedSeq: room.seq + 1 });
-        if (room.count >= 2000) return error('room_limit');
+        if (room.count >= messageLimit(room.game)) return error('room_limit');
         if (rules) {
           if (!rules.apply(room.state, seat, msg.data)) return error('bad_request');
           room.seq++;
           room.count++;
+          this.finishAtLimit(room);
           this.room = room;
           this.sendViews(room, { t: 'state', round: room.round, seq: room.seq });
           break;
@@ -167,7 +169,7 @@ export class GameRoom extends DurableObject {
         if (!text || text.length > 280) return error('bad_request');
         const ts = Date.now();
         if (ts - attachment.lastChatAt < 1000) return error('rate_limited');
-        if (room.count >= 2000) return error('room_limit');
+        if (room.count >= messageLimit(room.game)) return error('room_limit');
         const name = room.seats[seat].name;
         const id = this.storage.transactionSync(() => {
           room.count++;
@@ -176,6 +178,12 @@ export class GameRoom extends DurableObject {
         });
         ws.serializeAttachment({ ...attachment, lastChatAt: ts });
         this.broadcast({ t: 'chat', id, seat, name, text, ts });
+        // A chat message can use the last of the allowance while a server-run game is still going.
+        if (this.finishAtLimit(room)) {
+          room.seq++;
+          this.room = room;
+          this.sendViews(room, { t: 'state', round: room.round, seq: room.seq });
+        }
         break;
       }
       case 'leave': {
@@ -213,6 +221,15 @@ export class GameRoom extends DurableObject {
         return error('bad_request');
     }
     await this.storage.setAlarm(Date.now() + (this.seated().length ? 48 : 24) * hour);
+  }
+
+  // Once a room has used its allowance, no more moves are accepted, so a server-run game
+  // still in progress is scored as it stands instead of being left without a winner.
+  finishAtLimit(room) {
+    const rules = authoritative[room.game];
+    if (!rules?.end || room.phase !== 'playing' || room.count < messageLimit(room.game) || rules.finished(room.state)) return false;
+    rules.end(room.state);
+    return true;
   }
 
   // Begins a round for the given seats. Games with authoritative state get per-seat views.

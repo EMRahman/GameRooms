@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  ROUTES, TICKETS, makeIronRoutes, applyIronRoutes, ironRoutesView, payOptions, claimProblem, connected,
+  ROUTES, TICKETS, makeIronRoutes, applyIronRoutes, ironRoutesView, payOptions, claimProblem, connected, endIronRoutes,
 } from '../public/iron-routes-rules.js';
-import { roomOptions } from '../worker/protocol.js';
+import { roomOptions, messageLimit } from '../worker/protocol.js';
 
 const cardTotal = state => state.deck.length + state.discard.length + state.market.length +
   state.players.reduce((sum, player) => sum + Object.values(player.hand).reduce((a, b) => a + b, 0), 0);
@@ -31,6 +31,28 @@ function autoplay(state) {
   if (index >= 0) return applyIronRoutes(state, player.seat, { action: 'draw', source: index });
   return applyIronRoutes(state, player.seat, { action: 'drawTickets' });
 }
+
+test('the longest games fit the room allowance, and the room can score one early', () => {
+  let longest = 0;
+  for (let game = 0; game < 20; game++) {
+    const state = makeIronRoutes([0, 1, 2, 3, 4]);
+    finishSetup(state);
+    let moves = 5;
+    while (!state.over && moves < 20000) {
+      assert.ok(autoplay(state));
+      moves++;
+    }
+    longest = Math.max(longest, moves);
+  }
+  assert.ok(longest < messageLimit('iron_routes') - 600, `a five-player game took ${longest} moves`);
+
+  const early = makeIronRoutes([0, 3]);
+  endIronRoutes(early);
+  assert.equal(early.phase, 'over');
+  assert.equal(early.over.rows.length, 2);
+  assert.equal(ironRoutesView(early, 3).winner, early.over.rows[0].seat);
+  assert.equal(applyIronRoutes(early, 0, { action: 'draw', source: 'deck' }), false);
+});
 
 test('Iron Routes deals hidden hands and lets everyone choose starting tickets at once', () => {
   const state = makeIronRoutes([0, 2, 3]);
