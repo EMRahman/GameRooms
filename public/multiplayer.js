@@ -142,7 +142,6 @@ function renderSetup() {
   $('setup-kicker').textContent = meta.subtitle;
   $('setup-title').textContent = meta.title;
   $('setup-rules').textContent = meta.rules;
-  $('player-capacity').textContent = meta.players;
   $('size-field').hidden = !meta.sizes;
   if (meta.sizes) {
     pickOption($('size-options'), meta.sizes.map(size => [`${size} × ${size}`, size]), chosen.size, value => { chosen.size = value; });
@@ -156,7 +155,6 @@ function renderSetup() {
     pickOption($('level-options'), setting.choices, chosen[setting.key], value => { chosen[setting.key] = value; });
   }
   $('no-options').hidden = Boolean(meta.sizes || setting);
-  $('create-button').textContent = `Create ${meta.title} room`;
 }
 
 function selectGame(game) {
@@ -166,14 +164,19 @@ function selectGame(game) {
 }
 
 for (const card of document.querySelectorAll('.game-card')) {
-  card.onclick = () => selectGame(card.dataset.game);
+  card.onclick = () => {
+    selectGame(card.dataset.game);
+    $('setup-details').open = true;
+    $('game').focus();
+  };
   card.onkeydown = event => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      selectGame(card.dataset.game);
+      card.onclick();
     }
   };
 }
+ $('game').addEventListener('change', () => selectGame($('game').value));
 selectGame(Object.hasOwn(games, pageGame) ? pageGame : 'dots_and_boxes');
 $('name').value = localStorage.getItem('gamerooms-name') ?? '';
 $('name').addEventListener('change', () => localStorage.setItem('gamerooms-name', $('name').value.trim()));
@@ -255,9 +258,12 @@ $('create').onsubmit = async event => {
 
 let session;
 if (inviteCode) {
+  document.querySelector('.intro').hidden = true;
   $('entry-actions').hidden = true;
+  $('invite').insertBefore($('name').closest('.name-row'), $('invite').querySelector('button'));
   if (codePattern.test(inviteCode)) {
     $('invite').hidden = false;
+    $('invite-title').textContent = `Join room ${inviteCode}`;
     $('invite').onsubmit = event => {
       event.preventDefault();
       session ??= enterRoom(inviteCode);
@@ -520,7 +526,7 @@ function enterRoom(code) {
     }
     if (response?.status === 404) {
       terminal = true;
-      notice('Room not found or expired. Open GameRooms to start a new one.');
+      notice('Room not found or expired. Open Team Side Quests to start a new one.');
       render();
       return;
     }
@@ -539,12 +545,9 @@ function enterRoom(code) {
           ({ phase, seat, hostSeat, round, seq, players, roundSeats } = msg);
           maxSeats = msg.maxSeats ?? 2;
           game = msg.game;
-          $('player-capacity').textContent = maxSeats > 2 ? `2–${maxSeats} players` : 'Two players';
-          $('game-title').textContent = games[game].title;
-          $('game-subtitle').textContent = games[game].subtitle;
-          $('game-subtitle').hidden = false;
+          $('room-title').textContent = games[game].title;
           $('rules').textContent = games[game].rules;
-          document.title = `${games[game].title} · GameRooms`;
+          document.title = `${games[game].title} · Team Side Quests`;
           resetBoard(msg.options, msg.seed, msg.view);
           for (const move of msg.log) board = games[game].move(board, move.seat, move.data);
           $('messages').replaceChildren();
