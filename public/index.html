@@ -11,7 +11,7 @@
 </head>
 <body>
 <main>
-  <header class="masthead"><a href="./">GameRooms</a><span>Two players</span></header>
+  <header class="masthead"><a href="./">GameRooms</a><span id="player-capacity">Online multiplayer</span></header>
   <section class="intro">
     <h1 id="game-title">Choose a game</h1>
     <p id="game-subtitle" hidden></p>
@@ -23,9 +23,13 @@
     <div id="entry-actions">
       <form id="create">
         <label for="game">Game</label>
-        <select id="game"><option value="dots_and_boxes">Dots and Boxes</option><option value="fourfold">Fourfold</option></select>
+        <select id="game"><option value="dots_and_boxes">Dots and Boxes</option><option value="fourfold">Fourfold</option><option value="go">Go</option><option value="memory_match">Memory Match</option><option value="northstar">Northstar</option></select>
         <div id="size-field"><label for="size">Board size</label>
         <select id="size"><option value="4">4 × 4 boxes</option><option value="5">5 × 5 boxes</option><option value="6">6 × 6 boxes</option></select></div>
+        <div id="level-field" hidden>
+          <label for="level">Table size</label>
+          <select id="level"></select>
+        </div>
         <button class="primary">Create room</button>
         <details>
           <summary>Owner key</summary>
@@ -52,9 +56,12 @@
       <p id="turn" role="status"></p>
       <div id="paper" class="paper" hidden><div id="board" aria-label="Dots and Boxes board" role="group"></div></div>
       <div class="actions">
+        <button id="go-pass" hidden>Pass</button>
+        <button id="go-resign" hidden>Resign</button>
         <button id="start" class="primary" hidden>Start game</button>
         <button id="leave" hidden>Leave room</button>
         <button id="claim" hidden>Claim host</button>
+        <select id="remove-player" aria-label="Player to remove" hidden></select>
         <button id="remove" hidden>Remove player</button>
         <button id="reconnect" hidden>Reconnect here</button>
       </div>

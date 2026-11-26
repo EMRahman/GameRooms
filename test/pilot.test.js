@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 import { makeBoard, playLine } from '../public/dots-rules.js';
 import { makeFourfoldBoard, dropCounter } from '../public/fourfold-rules.js';
+import { makeMemoryBoard, flipCard, memoryWinner } from '../public/memory-rules.js';
 
 test('closing a box scores and keeps the turn', () => {
   let board = makeBoard(4);
@@ -84,7 +85,7 @@ test('public room creation stops at ten even with a higher setting', async () =>
   crypto.subtle.timingSafeEqual = (a, b) => timingSafeEqual(Buffer.from(a), Buffer.from(b));
   try {
     assert.equal((await create(1, env.OWNER_KEY)).status, 201);
-    const results = await Promise.all(Array.from({ length: 10 }, (_, i) => create(i + 2, '', i % 2 ? 'fourfold' : 'dots_and_boxes')));
+    const results = await Promise.all(Array.from({ length: 10 }, (_, i) => create(i + 2, '', ['dots_and_boxes', 'fourfold', 'go', 'memory_match'][i % 4])));
     assert.equal(results.filter(res => res.status === 201).length, 9);
     const refused = results.find(res => res.status === 429);
     assert.ok((await refused.json()).resetsAt > Date.now());
@@ -198,4 +199,122 @@ test('Fourfold relays a win to both seats and rebuilds it on reconnect', async (
   assert.deepEqual(welcome.log.reduce((state, move) => dropCounter(state, move.seat, move.data), makeFourfoldBoard()), board);
   await send(players[0], 'rematch');
   assert.equal(peer.messages.at(-1).round, 2);
+});
+
+test('Memory Match keeps turns on a match and rotates through the occupied seats on a miss', () => {
+  let board = makeMemoryBoard({ level: 'expert' }, 1234, [1, 3, 4]);
+  assert.deepEqual(board.deck, makeMemoryBoard({ level: 'expert' }, 1234, [1, 3, 4]).deck);
+  assert.equal(board.deck.length, 36);
+  const first = 0;
+  const wrong = board.deck.findIndex(pair => pair !== board.deck[first]);
+  board = flipCard(board, 1, { card: first });
+  board = flipCard(board, 1, { card: wrong });
+  assert.equal(board.turn, 3);
+  assert.equal(board.revealed, null);
+  assert.equal(flipCard(board, 1, { card: first }), board);
+  for (let pair = 0; pair < 18; pair++) {
+    for (const [card, value] of board.deck.entries()) {
+      if (value === pair) board = flipCard(board, 3, { card });
+    }
+    assert.equal(board.turn, 3);
+  }
+  assert.equal(board.scores[3], 18);
+  assert.equal(memoryWinner(board), 3);
+});
+
+test('Memory Match fixes the round roster and replays the shared deck on reconnect', async () => {
+  const context = roomContext();
+  const sockets = [];
+  context.getWebSockets = () => sockets;
+  const room = new GameRoom(context, {});
+  const ids = Array.from({ length: 5 }, () => crypto.randomUUID());
+  await room.initialize(ids[0], 'memory_match', { level: 'classic' });
+  assert.equal(room.info().maxSeats, 5);
+  const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
+  const players = [socket(sockets), socket(sockets), socket(sockets)];
+  for (const [seat, ws] of players.entries()) await send(ws, 'hello', { clientId: ids[seat] });
+  await send(players[0], 'start');
+  const started = players[0].messages.at(-1);
+  assert.deepEqual(started.roundSeats, [0, 1, 2]);
+  assert.deepEqual(players[2].messages.at(-1), started);
+  await send(players[0], 'move', { round: 1, seq: 1, data: { card: 4 } });
+  const extra = socket(sockets);
+  await send(extra, 'hello', { clientId: ids[3] });
+  assert.equal(extra.readyState, WebSocket.CLOSED);
+
+  players[2].close();
+  await send(players[0], 'vacate', { seat: 2 });
+  const replacement = socket(sockets);
+  await send(replacement, 'hello', { clientId: ids[4] });
+  const welcome = replacement.messages[0];
+  assert.equal(welcome.seat, 2);
+  assert.equal(welcome.seed, started.seed);
+  assert.deepEqual(welcome.roundSeats, started.roundSeats);
+  const replay = welcome.log.reduce((state, move) => flipCard(state, move.seat, move.data),
+    makeMemoryBoard(welcome.options, welcome.seed, welcome.roundSeats));
+  assert.equal(replay.revealed, 4);
+  await send(players[0], 'rematch');
+  assert.equal(replacement.messages.at(-1).round, 2);
+  assert.deepEqual(replacement.messages.at(-1).roundSeats, started.roundSeats);
+});
+
+test('Northstar keeps fleets private while validating deployment, shots and reconnects', async () => {
+  const context = roomContext();
+  const sockets = [];
+  context.getWebSockets = () => sockets;
+  const room = new GameRoom(context, {});
+  const ids = [crypto.randomUUID(), crypto.randomUUID()];
+  await room.initialize(ids[0], 'northstar', {});
+  const players = [socket(sockets), socket(sockets)];
+  const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
+  for (const [seat, ws] of players.entries()) await send(ws, 'hello', { clientId: ids[seat] });
+  await send(players[0], 'start');
+  const [a, b] = players.map(ws => ws.messages.at(-1));
+  assert.equal(a.seed, null);
+  assert.equal(a.view.stage, 'deployment');
+  assert.deepEqual(a.view.fleet.map(ship => ship.cells.length), [5, 4, 3, 3, 2]);
+  assert.deepEqual(Object.keys(a.view).sort(), [
+    'enemySunk', 'fleet', 'incoming', 'lastShot', 'locked', 'outgoing', 'stage', 'turn', 'winner',
+  ]);
+
+  let seq = 1;
+  async function action(seat, data, accepted = true) {
+    await send(players[seat], 'move', { round: 1, seq, data });
+    const msg = players[seat].messages.at(-1);
+    if (accepted) {
+      assert.equal(msg.t, 'northstar');
+      assert.equal(msg.seq, seq++);
+    } else assert.equal(msg.code, 'bad_request');
+    return msg.view;
+  }
+
+  const enemy = b.view.fleet.flatMap(ship => ship.cells);
+  const miss = b.view.incoming.findIndex((_, point) => !enemy.includes(point));
+  await action(0, { action: 'fire', point: miss }, false);
+  await action(0, { action: 'lock' });
+  await action(0, { action: 'shuffle' }, false);
+  await action(1, { action: 'lock' });
+  await action(1, { action: 'fire', point: 0 }, false);
+  await action(0, { action: 'fire', point: enemy[0] });
+  await action(0, { action: 'fire', point: enemy[0] }, false);
+  assert.equal((await action(0, { action: 'fire', point: miss })).turn, 1);
+
+  const peer = socket(sockets);
+  await send(peer, 'hello', { clientId: ids[0] });
+  const welcome = peer.messages[0];
+  assert.deepEqual(welcome.log, []);
+  assert.deepEqual(welcome.view.fleet, a.view.fleet);
+  assert.equal(welcome.view.outgoing[enemy[0]], 'hit');
+  assert.equal(welcome.view.outgoing[miss], 'miss');
+  players[0] = peer;
+
+  const ownPoints = a.view.fleet.flatMap(ship => ship.cells);
+  const replyMiss = a.view.incoming.findIndex((_, point) => !ownPoints.includes(point));
+  await action(1, { action: 'fire', point: replyMiss });
+  for (const point of enemy.slice(1)) await action(0, { action: 'fire', point });
+  assert.equal(peer.messages.at(-1).view.winner, 0);
+  assert.equal(peer.messages.at(-1).view.enemySunk.length, 5);
+  await send(peer, 'rematch');
+  assert.equal(peer.messages.at(-1).round, 2);
+  assert.equal(peer.messages.at(-1).view.stage, 'deployment');
 });
