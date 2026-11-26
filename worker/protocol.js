@@ -3,9 +3,10 @@ import { validDrop } from '../public/fourfold-rules.js';
 import { GO_SIZES, goMoveData } from '../public/go-rules.js';
 import { MEMORY_LEVELS, validFlip } from '../public/memory-rules.js';
 import { ROUND_CHOICES } from '../public/landlord-rules.js';
+import { ROUND_CHOICES as CONQUEST_ROUNDS } from '../public/conquest-rules.js';
 
 export const defaultGame = 'dots_and_boxes';
-export const maxSeats = game => ({ memory_match: 5, iron_routes: 5, landlord: 6 })[game] ?? 2;
+export const maxSeats = game => ({ memory_match: 5, iron_routes: 5, landlord: 6, conquest: 6 })[game] ?? 2;
 export const clientIdValid = id => typeof id === 'string' && /^[a-f0-9-]{36}$/i.test(id);
 
 export function roomOptions(game, options) {
@@ -13,6 +14,10 @@ export function roomOptions(game, options) {
   if (game === 'landlord') {
     const rounds = options?.rounds ?? 25;
     return ROUND_CHOICES.includes(rounds) ? { rounds } : null;
+  }
+  if (game === 'conquest') {
+    const rounds = options?.rounds ?? 20;
+    return CONQUEST_ROUNDS.includes(rounds) ? { rounds } : null;
   }
   if (game === 'memory_match') {
     const level = options?.level ?? 'easy';

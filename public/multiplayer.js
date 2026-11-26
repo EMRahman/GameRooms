@@ -9,6 +9,8 @@ import { drawNorthstar } from './northstar-board.js';
 import { drawIronRoutes } from './iron-routes-board.js';
 import { ROUND_CHOICES } from './landlord-rules.js';
 import { drawLandlord } from './landlord-board.js';
+import { ROUND_CHOICES as CONQUEST_ROUNDS } from './conquest-rules.js';
+import { drawConquest } from './conquest-board.js';
 
 const $ = id => document.getElementById(id);
 const inviteCode = new URLSearchParams(location.search).get('room')?.trim().toUpperCase();
@@ -87,11 +89,23 @@ const games = {
     subtitle: 'Property trading · 2–6 players',
     rules: 'Roll, move and buy streets. Unbought property goes to auction. Own a whole colour group to build houses and charge more rent. Trade on your turn. Bankrupt players are out; the richest player when time runs out wins.',
     authoritative: true,
-    setting: { key: 'rounds', label: 'Game length', choices: ROUND_CHOICES.map(n => [`${n} rounds`, n]) },
+    setting: { key: 'rounds', label: 'Game length', choices: ROUND_CHOICES.map(n => [`${n} rounds`, n]), fallback: 25 },
     result: view => view.over ? view.winner : undefined,
     status: (view, seat) => view.trade ? (view.turn === seat ? 'A trade offer for you' : 'Trade offer waiting')
       : view.auction ? (view.turn === seat ? 'Your bid' : 'Auction in progress') : undefined,
     draw: (container, view, submit, seat, nameOf) => drawLandlord(container, seat, submit, nameOf),
+  },
+  conquest: {
+    title: 'Conquest',
+    players: '2–6 players',
+    subtitle: 'World domination · 2–6 players',
+    rules: 'Territories are dealt at random. Each turn, reinforce, attack neighbours with dice, then fortify. Hold whole regions for bonus armies and trade card sets for more. Conquer the world, or hold the most territory when time runs out.',
+    authoritative: true,
+    setting: { key: 'rounds', label: 'Game length', choices: CONQUEST_ROUNDS.map(n => [`${n} rounds`, n]), fallback: 20 },
+    result: view => view.over ? view.winner : undefined,
+    status: (view, seat) => view.phase !== 'setup' ? undefined
+      : view.turn === seat ? 'Place your starting armies' : 'Waiting for everyone to deploy',
+    draw: (container, view, submit, seat, nameOf) => drawConquest(container, seat, submit, nameOf),
   },
 };
 
@@ -132,6 +146,8 @@ function renderSetup() {
   const { setting } = meta;
   $('level-field').hidden = !setting;
   if (setting) {
+    // Games can share a setting key (Landlord and Conquest both use `rounds`) with different choices.
+    if (!setting.choices.some(([, option]) => option === chosen[setting.key])) chosen[setting.key] = setting.fallback ?? setting.choices[0][1];
     $('level-label').textContent = setting.label;
     pickOption($('level-options'), setting.choices, chosen[setting.key], value => { chosen[setting.key] = value; });
   }
@@ -381,6 +397,8 @@ function enterRoom(code) {
     $('paper').classList.toggle('iron-paper', game === 'iron_routes');
     container.classList.toggle('landlord-board', game === 'landlord');
     $('paper').classList.toggle('landlord-paper', game === 'landlord');
+    container.classList.toggle('conquest-board', game === 'conquest');
+    $('paper').classList.toggle('conquest-paper', game === 'conquest');
     const nameOf = index => players.find(player => player.seat === index)?.name ?? `Player ${index + 1}`;
     renderBoard = games[game].draw?.(container, board, submitMove, seat, nameOf) ?? drawDots(container, board.size);
   }

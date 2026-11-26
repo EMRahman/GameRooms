@@ -391,6 +391,37 @@ test('Landlord runs on the server with the chosen game length and hides deck ord
 });
 
 
+test('Conquest runs on the server and keeps hands and deployments private', async () => {
+  const context = roomContext();
+  const sockets = [];
+  context.getWebSockets = () => sockets;
+  const room = new GameRoom(context, {});
+  const ids = [crypto.randomUUID(), crypto.randomUUID()];
+  await room.initialize(ids[0], 'conquest', { rounds: 10 });
+  assert.equal(room.info().maxSeats, 6);
+  const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
+  const players = ids.map(() => socket(sockets));
+  for (const [seat, ws] of players.entries()) await send(ws, 'hello', { clientId: ids[seat] });
+  await send(players[0], 'start');
+  const started = players[1].messages.at(-1);
+  assert.equal(started.t, 'started');
+  assert.equal(started.seed, null);
+  assert.equal(started.view.rounds, 10);
+  assert.equal(started.view.phase, 'setup');
+  assert.equal(started.view.deck, 51);
+  assert.equal(started.view.players[0].cards, 0);
+  assert.ok(!('deploy' in started.view.players[0]));
+  const own = started.view.owner.indexOf(1);
+  await send(players[1], 'move', { round: 1, seq: 1, data: { action: 'deploy', place: { [own]: started.view.pool } } });
+  const other = players[0].messages.at(-1);
+  assert.equal(other.t, 'state');
+  assert.equal(other.view.armies[own], 1, 'the other seat saw a hidden deployment');
+  assert.equal(other.view.players[1].ready, true);
+  assert.equal(other.view.turn, 0);
+  await send(players[1], 'rematch');
+  assert.equal(players[1].messages.at(-1).code, 'bad_request');
+});
+
 test('End game and leave return the room to the lobby without replaying old moves', async () => {
   const context = roomContext();
   const sockets = [];

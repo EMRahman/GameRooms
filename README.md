@@ -1,6 +1,6 @@
 # GameRooms
 
-Play Dots and Boxes, Fourfold, Go, Memory Match, Northstar, Iron Routes, or Landlord in your browser. Create a room and send a friend the invite
+Play Dots and Boxes, Fourfold, Go, Memory Match, Northstar, Iron Routes, Landlord, or Conquest in your browser. Create a room and send a friend the invite
 link or let them scan its QR code.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2FEMRahman%2FGameRooms)

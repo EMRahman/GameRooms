@@ -33,7 +33,7 @@ playable pilot, anyone can deploy their own copy on a free Cloudflare account.
 | northstar | 2 | Hidden fleets | Authoritative (shipped) |
 | landlord | 2-6 | Deck order only | Authoritative (shipped) |
 | iron_routes | 2-5 | Hidden hands and tickets | Authoritative (shipped) |
-| conquest | 2-6 | Hidden info | Phase 4 (authoritative) |
+| conquest | 2-6 | Hidden hands and deployments | Authoritative (shipped) |
 
 Single-player games (snake, pocket_snake, driftbelt, linefall) remain only in `Games`.
 The first release covers the four open-information games. Hidden-information games
@@ -393,9 +393,14 @@ move log stays empty, so a reconnecting client rebuilds from `welcome.view`.
 Authoritative moves skip the `seq === expectedSeq` check because the server
 validates them against its own state. Simultaneous moves, such as every
 Iron Routes player choosing starting tickets at once, all succeed in arrival order.
-Rematch requires `finished(state)`. Northstar, Iron Routes and Landlord use this path.
+Rematch requires `finished(state)`. Northstar, Iron Routes, Landlord and Conquest use this path.
 Landlord runs on the server so dice and card draws cannot be forged; every game is
-timed (15, 25 or 40 rounds) because an untimed game can exceed the 2,000-message room limit. The
+timed (15, 25 or 40 rounds) because an untimed game can exceed the 2,000-message room limit.
+Conquest runs on the server so dice, card draws and hands stay honest. Territories are
+dealt at random and every seat places its starting armies at once; placements stay
+hidden until all seats have deployed. Each reinforcement is sent as one batch and a
+blitz is one message, and games are timed (10, 20 or 30 rounds, most territory wins)
+for the same message limit. The
 online versions have no computer opponents, because those depend on timers that
 would keep a room from hibernating.
 
