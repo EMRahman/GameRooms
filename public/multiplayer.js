@@ -136,9 +136,6 @@ function pickOption(container, options, value, onPick) {
 function renderSetup() {
   const game = $('game').value;
   const meta = games[game];
-  for (const card of document.querySelectorAll('.game-card')) {
-    card.setAttribute('aria-checked', String(card.dataset.game === game));
-  }
   $('setup-kicker').textContent = meta.subtitle;
   $('setup-title').textContent = meta.title;
   $('setup-rules').textContent = meta.rules;
@@ -164,14 +161,7 @@ function selectGame(game) {
 }
 
 for (const card of document.querySelectorAll('.game-card')) {
-  card.onclick = () => {
-    selectGame(card.dataset.game);
-    $('setup-details').open = true;
-    // The library sits below the create panel, so bring the next step back into view.
-    const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-    $('create').scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'nearest' });
-    $('create-button').focus({ preventScroll: true });
-  };
+  card.onclick = () => openSetup(card);
   card.onkeydown = event => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -179,7 +169,22 @@ for (const card of document.querySelectorAll('.game-card')) {
     }
   };
 }
- $('game').addEventListener('change', () => selectGame($('game').value));
+
+// Choosing a game opens its setup sheet, headed by a copy of the card's artwork.
+function openSetup(card) {
+  selectGame(card.dataset.game);
+  const art = card.querySelector('.game-art').cloneNode(true);
+  // The originals keep the ids, so the copy's gradient references still resolve.
+  for (const element of art.querySelectorAll('[id]')) element.removeAttribute('id');
+  $('setup-art').replaceChildren(art);
+  createNotice();
+  $('setup-dialog').showModal();
+}
+$('setup-close').onclick = () => $('setup-dialog').close();
+// A click on the dialog itself, rather than its contents, landed on the backdrop.
+$('setup-dialog').onclick = event => {
+  if (event.target === $('setup-dialog')) $('setup-dialog').close();
+};
 selectGame(Object.hasOwn(games, pageGame) ? pageGame : 'dots_and_boxes');
 $('name').value = localStorage.getItem('gamerooms-name') ?? '';
 $('name').addEventListener('change', () => localStorage.setItem('gamerooms-name', $('name').value.trim()));
@@ -198,6 +203,11 @@ function createId() {
 function notice(text = '') {
   $('notice').hidden = !text;
   $('notice').textContent = text;
+}
+// Create errors show inside the setup sheet, which covers the page notice.
+function createNotice(text = '') {
+  $('create-notice').hidden = !text;
+  $('create-notice').textContent = text;
 }
 function inviteUrl(code) {
   const url = new URL('./', location.href);
@@ -233,7 +243,7 @@ $('create').onsubmit = async event => {
   const button = event.submitter;
   const game = $('game').value;
   button.disabled = true;
-  notice();
+  createNotice();
   try {
     const headers = { 'Content-Type': 'application/json' };
     const key = $('owner-key').value.trim();
@@ -248,12 +258,12 @@ $('create').onsubmit = async event => {
     });
     const body = await res.json();
     if (!res.ok) {
-      notice(body.resetsAt ? `Room creation reopens at ${new Date(body.resetsAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.` : body.error);
+      createNotice(body.resetsAt ? `Room creation reopens at ${new Date(body.resetsAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.` : body.error);
       return;
     }
     location.href = new URL(`./${game}.html?room=${body.code}`, location.href);
   } catch {
-    notice('Service busy. Try again shortly.');
+    createNotice('Service busy. Try again shortly.');
   } finally {
     button.disabled = false;
   }

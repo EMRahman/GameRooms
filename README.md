@@ -4,11 +4,11 @@
 
 **▶ Play now: [Cloudflare](https://gamerooms.ehsanr-web.workers.dev/) · [GitHub Pages](https://emrahman.github.io/GameRooms/)**
 
-Quick multiplayer games for friends. No account needed: just open the page in a browser on your phone, tablet, or computer. Both links use the same Cloudflare Worker for rooms, so they share the same room limits.
+*One game, every time zone.* Quick multiplayer games for friends, whether it’s afternoon where you are and evening where they are. No account needed: open the page in a browser on your phone, tablet, or computer. Both links use the same Cloudflare Worker for rooms, so they share the same room limits.
 
 ## How it works
 
-1. **Pick a game** from the library.
+1. **Pick a game** and choose its settings.
 2. **Create a room.**
 3. **Invite friends** with the room code, invite link, or QR code. Each room has its own chat.
 
@@ -35,7 +35,7 @@ The button deploys the game pages, API, and two SQLite-backed Durable Objects as
 
 ### Room limits
 
-Each deployment allows up to **10 new rooms per UTC day**, and by default **three rooms per network per hour**. To create rooms beyond those limits, set the optional `OWNER_KEY` Worker secret, then enter it under **Name & game settings → Owner key** when you create a room. Owner-created rooms still count toward the daily total.
+Each deployment allows up to **10 new rooms per UTC day**, and by default **three rooms per network per hour**. To create rooms beyond those limits, set the optional `OWNER_KEY` Worker secret, then enter it under **Have an owner key?** when you set up a room. Owner-created rooms still count toward the daily total.
 
 ## Develop locally
 
