@@ -1,6 +1,6 @@
 # Team Side Quests
 
-[![Friends playing across devices on a dark arcade map](public/world-play.svg)](#play)
+[![Friends around the globe playing together on phones, tablets, and laptops](public/world-play.jpg)](#play)
 
 Turn a quick game into a shared side quest. Pick a game, create a room, then invite friends with its room code, link, or QR code. Join from your browser on any device.
 

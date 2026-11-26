@@ -642,7 +642,7 @@ button.primary:not(:disabled):hover { background: #a4efd3; }
 .intro h1 { font-size: clamp(3rem, 7.5vw, 6.5rem); line-height: .91; letter-spacing: -.065em; font-weight: 850; }
 .intro-description { max-width: 31rem; margin: 1rem 0 0; color: #bfd0cf; font-size: clamp(1rem, 1.5vw, 1.2rem); line-height: 1.5; }
 .intro-description strong { color: var(--blue); }
-.hero-art { display: block; width: 100%; height: auto; border-radius: 1.4rem; }
+.hero-art { display: block; width: 100%; height: auto; border-radius: 1.4rem; border: 1px solid var(--line); }
 .entry-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: stretch; }
 .panel, .game, .chat, .share { background: linear-gradient(145deg, rgba(20, 44, 54, .97), rgba(11, 29, 39, .99)); }
 .setup, .join-panel { display: grid; align-content: start; gap: .65rem; min-width: 0; padding: clamp(.8rem, 1.7vw, 1.2rem); }
@@ -686,7 +686,7 @@ select:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
 @media (max-width: 760px) {
   .intro { grid-template-columns: 1fr; gap: .6rem; margin: 1rem 0 1.1rem; }
   .intro-copy { max-width: 40rem; }
-  .hero-art { width: min(320px, 100%); height: auto; margin: 0 auto; object-fit: contain; object-position: center; }
+  .hero-art { width: min(480px, 100%); height: auto; margin: 0 auto; object-fit: contain; object-position: center; }
   .entry-panels { grid-template-columns: 1fr; gap: .65rem; }
   .game-picker { margin-top: 1.1rem; }
   .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -698,7 +698,7 @@ select:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
   .masthead .brand { font-size: .86rem; }
   .intro h1 { font-size: clamp(2.7rem, 12vw, 4.2rem); }
   .intro-description { margin-top: .55rem; font-size: .94rem; }
-  .hero-art { width: min(310px, 100%); }
+  .hero-art { width: 100%; }
   .setup, .join-panel { padding: .7rem .8rem; }
   .action-title h2, .join-panel h2 { font-size: 1.08rem; }
   .action-title p { font-size: .74rem; }
