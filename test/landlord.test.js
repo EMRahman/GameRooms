@@ -23,7 +23,7 @@ function autoplay(state, turn) {
     if (play({ action: 'raise' }) && play({ action: 'pay' })) return true;
     return play({ action: 'bankrupt' });
   }
-  if (state.phase === 'buy') return play({ action: p.cash > 400 && turn % 4 ? 'buy' : 'auction' });
+  if (state.phase === 'buy') return play({ action: p.cash > 400 && p.cash >= SP[state.offer].p && turn % 4 ? 'buy' : 'auction' });
   if (state.phase === 'pre' && p.jail && turn % 2) return play({ action: 'bail' }) || play({ action: 'roll' });
   if (state.phase === 'pre' || state.again) {
     const street = owned(state, pid).find(i => !buildReason(state, pid, i));
