@@ -16,71 +16,74 @@
   <header class="masthead"><a href="./" class="brand">Team Side Quests</a></header>
   <section class="intro" aria-labelledby="hero-title">
     <div class="intro-copy">
-    <h1 id="hero-title">Your next game night.</h1>
-    <p class="intro-description">Pick a game, invite your people, and play together from anywhere. <strong>No account needed.</strong></p>
+      <h1 id="hero-title">Your next game night.</h1>
+      <p class="intro-description">Pick a game, invite your people, and play together from anywhere. <strong>No account needed.</strong></p>
     </div>
     <img class="hero-art" src="./world-play.jpg" width="1376" height="768" alt="Friends around the globe playing together on phones, tablets, and laptops from the couch, bedroom, train, and park">
+    <div class="entry-panels">
+      <form id="create" class="panel setup">
+        <div class="action-title"><h2>Create room</h2></div>
+        <div class="create-row">
+          <label class="sr-only" for="game">Choose a game</label>
+          <select id="game" aria-label="Choose a game">
+            <option value="dots_and_boxes">Boxed In</option>
+            <option value="fourfold">Fourfold</option>
+            <option value="go">Go</option>
+            <option value="memory_match">Memory Match</option>
+            <option value="northstar">Northstar</option>
+            <option value="iron_routes">Iron Routes</option>
+            <option value="landlord">Landlord</option>
+            <option value="conquest">Conquest</option>
+          </select>
+          <button class="primary" id="create-button">Create room</button>
+        </div>
+        <details class="setup-details" id="setup-details">
+          <summary>Name &amp; game settings</summary>
+          <div class="name-row">
+            <label for="name">Your name <small>(optional)</small></label>
+            <input id="name" maxlength="20" autocomplete="nickname" placeholder="Player name">
+          </div>
+          <div class="setup-head">
+            <p class="eyebrow" id="setup-kicker">Dots and Boxes</p>
+            <h3 id="setup-title">Boxed In</h3>
+            <p class="rules" id="setup-rules"></p>
+          </div>
+          <div class="field" id="size-field">
+            <span class="field-label" id="size-label">Board size</span>
+            <div class="segments" id="size-options" role="radiogroup" aria-labelledby="size-label"></div>
+          </div>
+          <div class="field" id="level-field" hidden>
+            <span class="field-label" id="level-label">Table size</span>
+            <div class="segments" id="level-options" role="radiogroup" aria-labelledby="level-label"></div>
+          </div>
+          <p class="field-note" id="no-options">No settings for this game.</p>
+          <div class="owner">
+            <label for="owner-key">Owner key <small>(optional)</small></label>
+            <input id="owner-key" type="password" autocomplete="off" placeholder="Optional owner key">
+          </div>
+        </details>
+        <p id="room-stats" role="status" hidden></p>
+      </form>
+      <div class="panel join-panel">
+        <form id="join">
+          <h2>Have a code?</h2>
+          <div class="join-row">
+            <label class="sr-only" for="code">Room code</label>
+            <input id="code" required maxlength="5" autocapitalize="characters" autocomplete="off" placeholder="5-character code">
+            <button>Join room</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </section>
   <p id="notice" role="status" hidden></p>
   <section id="lobby" class="lobby">
     <div id="entry-actions">
-      <div class="entry-panels">
-        <form id="create" class="panel setup">
-          <div class="action-title"><h2>Create room</h2></div>
-          <div class="create-row">
-            <label class="sr-only" for="game">Choose a game</label>
-            <select id="game" aria-label="Choose a game">
-              <option value="dots_and_boxes">Boxed In</option>
-              <option value="fourfold">Fourfold</option>
-              <option value="go">Go</option>
-              <option value="memory_match">Memory Match</option>
-              <option value="northstar">Northstar</option>
-              <option value="iron_routes">Iron Routes</option>
-              <option value="landlord">Landlord</option>
-              <option value="conquest">Conquest</option>
-            </select>
-            <button class="primary" id="create-button">Create room</button>
-          </div>
-          <details class="setup-details" id="setup-details">
-            <summary>Name &amp; game settings</summary>
-            <div class="name-row">
-              <label for="name">Your name <small>(optional)</small></label>
-              <input id="name" maxlength="20" autocomplete="nickname" placeholder="Player name">
-            </div>
-            <div class="setup-head">
-              <p class="eyebrow" id="setup-kicker">Dots and Boxes</p>
-              <h3 id="setup-title">Boxed In</h3>
-              <p class="rules" id="setup-rules"></p>
-            </div>
-            <div class="field" id="size-field">
-              <span class="field-label" id="size-label">Board size</span>
-              <div class="segments" id="size-options" role="radiogroup" aria-labelledby="size-label"></div>
-            </div>
-            <div class="field" id="level-field" hidden>
-              <span class="field-label" id="level-label">Table size</span>
-              <div class="segments" id="level-options" role="radiogroup" aria-labelledby="level-label"></div>
-            </div>
-            <p class="field-note" id="no-options">No settings for this game.</p>
-            <div class="owner">
-              <label for="owner-key">Owner key <small>(optional)</small></label>
-              <input id="owner-key" type="password" autocomplete="off" placeholder="Optional owner key">
-            </div>
-          </details>
-          <p id="room-stats" role="status" hidden></p>
-        </form>
-        <div class="panel join-panel">
-          <form id="join">
-            <h2>Have a code?</h2>
-            <div class="join-row">
-              <label class="sr-only" for="code">Room code</label>
-              <input id="code" required maxlength="5" autocapitalize="characters" autocomplete="off" placeholder="5-character code">
-              <button>Join room</button>
-            </div>
-          </form>
-        </div>
-      </div>
       <div class="game-picker">
-        <h2 class="gallery-title">Game library</h2>
+        <div class="gallery-head">
+          <h2 class="gallery-title">Game library</h2>
+          <p class="gallery-hint">Choose a game, then create a room.</p>
+        </div>
               <div class="game-grid" role="radiogroup" aria-label="Choose a game">
           <div class="game-card" role="radio" tabindex="0" aria-checked="false" data-game="dots_and_boxes">
   <div class="game-art art-dots" aria-hidden="true">
@@ -375,6 +378,10 @@
       </details>
     </aside>
   </div>
+  <footer class="site-footer" id="site-footer">
+    <p>Team Side Quests is free and open source.</p>
+    <p><a href="https://github.com/EMRahman/GameRooms">Source on GitHub</a> · <a href="https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2FEMRahman%2FGameRooms">Deploy your own</a></p>
+  </footer>
 </main>
 </body>
 </html>
