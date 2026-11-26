@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#142931">
-  <title>Boxed In · GameRooms</title>
+  <title>GameRooms</title>
   <link rel="stylesheet" href="./style.css">
   <script defer src="./vendor/qr.js"></script>
   <script type="module" src="./multiplayer.js"></script>
@@ -13,8 +13,8 @@
 <main>
   <header class="masthead"><a href="./">GameRooms</a><span>Two players</span></header>
   <section class="intro">
-    <h1>Boxed In</h1>
-    <p>Dots and Boxes</p>
+    <h1 id="game-title">Choose a game</h1>
+    <p id="game-subtitle" hidden></p>
   </section>
   <p id="notice" role="status" hidden></p>
   <section id="lobby" class="entry">
@@ -22,8 +22,10 @@
     <input id="name" maxlength="20" autocomplete="nickname" placeholder="Player name">
     <div id="entry-actions">
       <form id="create">
-        <label for="size">Board size</label>
-        <select id="size"><option value="4">4 × 4 boxes</option><option value="5">5 × 5 boxes</option><option value="6">6 × 6 boxes</option></select>
+        <label for="game">Game</label>
+        <select id="game"><option value="dots_and_boxes">Dots and Boxes</option><option value="fourfold">Fourfold</option></select>
+        <div id="size-field"><label for="size">Board size</label>
+        <select id="size"><option value="4">4 × 4 boxes</option><option value="5">5 × 5 boxes</option><option value="6">6 × 6 boxes</option></select></div>
         <button class="primary">Create room</button>
         <details>
           <summary>Owner key</summary>
@@ -56,7 +58,7 @@
         <button id="remove" hidden>Remove player</button>
         <button id="reconnect" hidden>Reconnect here</button>
       </div>
-      <p class="rules">Draw a line between two dots. Close a box to score and go again. Most boxes wins.</p>
+      <p class="rules" id="rules"></p>
     </section>
     <details class="chat" id="chat-panel" open>
       <summary id="chat-summary">Room chat</summary>

@@ -3,6 +3,7 @@ import { registerHooks } from 'node:module';
 import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 import { makeBoard, playLine } from '../public/dots-rules.js';
+import { makeFourfoldBoard, dropCounter } from '../public/fourfold-rules.js';
 
 test('closing a box scores and keeps the turn', () => {
   let board = makeBoard(4);
@@ -73,17 +74,17 @@ test('public room creation stops at ten even with a higher setting', async () =>
       return roomObjects.get(code);
     } },
   };
-  const create = async (index, key = '') => worker.fetch(new Request('https://games.example/api/rooms', {
+  const create = async (index, key = '', game = 'dots_and_boxes') => worker.fetch(new Request('https://games.example/api/rooms', {
     method: 'POST',
     headers: { 'CF-Connecting-IP': `192.0.2.${index}`, 'X-Owner-Key': key },
-    body: JSON.stringify({ game: 'dots_and_boxes', clientId: crypto.randomUUID() }),
+    body: JSON.stringify({ game, clientId: crypto.randomUUID() }),
   }), env);
   // Node lacks the Worker-specific method. Preserve equal-length constant-time comparison.
   const { timingSafeEqual } = await import('node:crypto');
   crypto.subtle.timingSafeEqual = (a, b) => timingSafeEqual(Buffer.from(a), Buffer.from(b));
   try {
     assert.equal((await create(1, env.OWNER_KEY)).status, 201);
-    const results = await Promise.all(Array.from({ length: 10 }, (_, i) => create(i + 2)));
+    const results = await Promise.all(Array.from({ length: 10 }, (_, i) => create(i + 2, '', i % 2 ? 'fourfold' : 'dots_and_boxes')));
     assert.equal(results.filter(res => res.status === 201).length, 9);
     const refused = results.find(res => res.status === 429);
     assert.ok((await refused.json()).resetsAt > Date.now());
@@ -120,7 +121,7 @@ test('two seats finish a full game, reconnect, chat and rematch', async () => {
   const room = new GameRoom(context, {});
   const ids = [crypto.randomUUID(), crypto.randomUUID()];
   assert.equal(room.info(), null);
-  await room.initialize(ids[0], 4);
+  await room.initialize(ids[0], 'dots_and_boxes', { size: 4 });
   const a = socket(sockets);
   const b = socket(sockets);
   const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
@@ -152,4 +153,49 @@ test('two seats finish a full game, reconnect, chat and rematch', async () => {
   await send(a, 'rematch');
   assert.equal(reconnected.messages.at(-1).round, 2);
   assert.equal(reconnected.messages.at(-1).t, 'started');
+});
+
+
+test('Fourfold stops accepting drops into a full column', () => {
+  let board = makeFourfoldBoard();
+  for (let i = 0; i < 6; i++) board = dropCounter(board, board.turn, { col: 3 });
+  assert.equal(board.moves, 6);
+  assert.equal(dropCounter(board, board.turn, { col: 3 }), board);
+  assert.equal(dropCounter(board, 1 - board.turn, { col: 4 }), board);
+});
+
+test('Fourfold relays a win to both seats and rebuilds it on reconnect', async () => {
+  const context = roomContext();
+  const sockets = [];
+  context.getWebSockets = () => sockets;
+  const room = new GameRoom(context, {});
+  const ids = [crypto.randomUUID(), crypto.randomUUID()];
+  await room.initialize(ids[0], 'fourfold', {});
+  assert.equal(room.info().game, 'fourfold');
+
+  const players = [socket(sockets), socket(sockets)];
+  const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
+  for (const [seat, ws] of players.entries()) await send(ws, 'hello', { clientId: ids[seat] });
+  await send(players[0], 'start');
+  await send(players[0], 'move', { round: 1, seq: 1, data: { col: 7 } });
+  assert.equal(players[0].messages.at(-1).code, 'bad_request');
+
+  const columns = [0, 0, 1, 1, 2, 2, 3];
+  let board = makeFourfoldBoard();
+  for (const [index, col] of columns.entries()) {
+    await send(players[board.turn], 'move', { round: 1, seq: index + 1, data: { col } });
+    const msg = players[0].messages.at(-1);
+    assert.deepEqual(msg, players[1].messages.at(-1));
+    board = dropCounter(board, msg.seat, msg.data);
+  }
+  assert.equal(board.winner, 0);
+  assert.equal(board.winningCells.length, 4);
+
+  const peer = socket(sockets);
+  await send(peer, 'hello', { clientId: ids[1] });
+  const welcome = peer.messages[0];
+  assert.equal(welcome.game, 'fourfold');
+  assert.deepEqual(welcome.log.reduce((state, move) => dropCounter(state, move.seat, move.data), makeFourfoldBoard()), board);
+  await send(players[0], 'rematch');
+  assert.equal(peer.messages.at(-1).round, 2);
 });
