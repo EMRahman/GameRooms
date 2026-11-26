@@ -128,7 +128,6 @@ test('two seats finish a full game, reconnect, chat and rematch', async () => {
   const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
   await send(a, 'hello', { clientId: ids[0] });
   await send(b, 'hello', { clientId: ids[1] });
-  await send(a, 'start');
   await send(b, 'chat', { text: 'Good luck' });
   let board = makeBoard(4);
   let seq = 0;
@@ -177,7 +176,6 @@ test('Fourfold relays a win to both seats and rebuilds it on reconnect', async (
   const players = [socket(sockets), socket(sockets)];
   const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
   for (const [seat, ws] of players.entries()) await send(ws, 'hello', { clientId: ids[seat] });
-  await send(players[0], 'start');
   await send(players[0], 'move', { round: 1, seq: 1, data: { col: 7 } });
   assert.equal(players[0].messages.at(-1).code, 'bad_request');
 
@@ -258,6 +256,7 @@ test('Memory Match fixes the round roster and replays the shared deck on reconne
   assert.deepEqual(replacement.messages.at(-1).roundSeats, started.roundSeats);
 });
 
+
 test('Northstar keeps fleets private while validating deployment, shots and reconnects', async () => {
   const context = roomContext();
   const sockets = [];
@@ -268,7 +267,6 @@ test('Northstar keeps fleets private while validating deployment, shots and reco
   const players = [socket(sockets), socket(sockets)];
   const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
   for (const [seat, ws] of players.entries()) await send(ws, 'hello', { clientId: ids[seat] });
-  await send(players[0], 'start');
   const [a, b] = players.map(ws => ws.messages.at(-1));
   assert.equal(a.seed, null);
   assert.equal(a.view.stage, 'deployment');
@@ -361,4 +359,65 @@ test('Iron Routes sends each seat only its own hand and accepts simultaneous tic
   assert.equal(Object.values(welcome.view.me.hand).reduce((a, b) => a + b, 0), 5);
   await send(peer, 'rematch');
   assert.equal(peer.messages.at(-1).code, 'bad_request');
+});
+
+
+test('End game and leave return the room to the lobby without replaying old moves', async () => {
+  const context = roomContext();
+  const sockets = [];
+  context.getWebSockets = () => sockets;
+  const room = new GameRoom(context, {});
+  const ids = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()];
+  await room.initialize(ids[0], 'dots_and_boxes', { size: 4 });
+  const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
+  const a = socket(sockets);
+  const b = socket(sockets);
+  await send(a, 'hello', { clientId: ids[0] });
+  await send(b, 'hello', { clientId: ids[1] });
+  assert.equal(b.messages.at(-1).t, 'started');
+  await send(a, 'move', { round: 1, seq: 1, data: { axis: 'h', row: 0, col: 0 } });
+
+  // Any seated player can end the game; it does not start again by itself.
+  await send(b, 'end');
+  assert.equal(a.messages.at(-1).t, 'ended');
+  assert.equal(room.room.phase, 'lobby');
+  assert.equal(room.room.roundSeats, undefined);
+  assert.ok(!a.messages.some(msg => msg.t === 'started' && msg.round === 2));
+
+  // The host starts again by hand from the lobby.
+  await send(a, 'start');
+  assert.equal(b.messages.at(-1).round, 2);
+
+  // Leaving mid-game ends it for the remaining player.
+  await send(b, 'leave');
+  assert.equal(b.readyState, WebSocket.CLOSED);
+  assert.equal(a.messages.at(-2).t, 'ended');
+  assert.equal(room.room.phase, 'lobby');
+
+  // Rejoining the lobby sends no old moves to replay. The next arrival completes a round.
+  const c = socket(sockets);
+  await send(c, 'hello', { clientId: ids[1] });
+  assert.equal(c.messages[0].t, 'welcome');
+  assert.equal(c.messages[0].phase, 'lobby');
+  assert.deepEqual(c.messages[0].log, []);
+  assert.equal(a.messages.at(-1).t, 'started');
+  assert.equal(a.messages.at(-1).round, 3);
+  assert.equal(c.messages.at(-1).t, 'started');
+  assert.equal(c.messages.at(-1).round, 3);
+});
+
+test('room stats count today\'s rooms and the rooms with someone connected', async () => {
+  const budget = new Budget({ storage: storage() }, { DAILY_ROOM_LIMIT: '4' });
+  assert.deepEqual(await budget.stats().then(({ roomsToday, inUse, dailyLimit }) => ({ roomsToday, inUse, dailyLimit })),
+    { roomsToday: 0, inUse: 0, dailyLimit: 4 });
+  await budget.claim('192.0.2.1', false);
+  await budget.claim('192.0.2.2', false);
+  await budget.setLive('ABCDE', true);
+  await budget.setLive('ABCDE', true);
+  await budget.setLive('FGHJK', true);
+  await budget.setLive('FGHJK', false);
+  const stats = await budget.stats();
+  assert.equal(stats.roomsToday, 2);
+  assert.equal(stats.remaining, 2);
+  assert.equal(stats.inUse, 1);
 });

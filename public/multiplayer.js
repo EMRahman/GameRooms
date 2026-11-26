@@ -14,6 +14,7 @@ const codePattern = /^[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5}$/;
 const games = {
   dots_and_boxes: {
     title: 'Boxed In',
+    players: '2 players',
     subtitle: 'Dots and Boxes',
     rules: 'Draw a line between two dots. Close a box to score and go again. Most boxes wins.',
     sizes: [4, 5, 6],
@@ -23,6 +24,7 @@ const games = {
   },
   fourfold: {
     title: 'Fourfold',
+    players: '2 players',
     subtitle: 'Four in a Row',
     rules: 'Choose a column to drop a counter. Connect four horizontally, vertically, or diagonally to win.',
     make: makeFourfoldBoard,
@@ -32,6 +34,7 @@ const games = {
   },
   go: {
     title: 'Go',
+    players: '2 players',
     subtitle: 'Area scoring · 6.5 komi',
     rules: 'Black moves first. Surround territory and capture stones. Two passes score the board as it stands.',
     sizes: GO_SIZES,
@@ -42,6 +45,7 @@ const games = {
   },
   memory_match: {
     title: 'Memory Match',
+    players: '2–5 players',
     subtitle: 'Find matching pairs',
     rules: 'Flip two cards. Find a pair to score and go again. A miss passes the turn.',
     make: makeMemoryBoard,
@@ -51,6 +55,7 @@ const games = {
   },
   northstar: {
     title: 'Northstar',
+    players: '2 players',
     subtitle: 'Hidden fleet battle',
     rules: 'Lock your fleet, then fire at the target grid. A hit earns another shot. Sink all five opposing ships to win.',
     authoritative: true,
@@ -61,6 +66,7 @@ const games = {
   },
   iron_routes: {
     title: 'Iron Routes',
+    players: '2–5 players',
     subtitle: 'Railway building · 2–5 players',
     rules: 'Each turn, draw two train cards, claim a route with matching cards, or take destination tickets. Finished tickets score; unfinished ones cost their value. The longest line earns 12 points.',
     authoritative: true,
@@ -72,16 +78,63 @@ const games = {
 };
 
 const pageGame = location.pathname.split('/').pop().replace(/\.html$/, '');
-if (Object.hasOwn(games, pageGame)) $('game').value = pageGame;
-$('game').onchange = () => {
-  const sizes = games[$('game').value].sizes;
-  $('size-field').hidden = !sizes;
-  $('level-field').hidden = $('game').value !== 'memory_match';
-  $('player-capacity').textContent = { memory_match: '2–5 players', iron_routes: '2–5 players' }[$('game').value] ?? 'Two players';
-  if (sizes) $('size').replaceChildren(...sizes.map(size => new Option(`${size} × ${size}`, size)));
-};
-$('level').replaceChildren(...Object.entries(MEMORY_LEVELS).map(([key, level]) => new Option(level.label, key)));
-$('game').onchange();
+// The chosen size and table are remembered per page visit; each game falls back to its first option.
+const chosen = { size: games.dots_and_boxes.sizes[0], level: Object.keys(MEMORY_LEVELS)[0] };
+
+function pickOption(container, options, value, onPick) {
+  container.replaceChildren(...options.map(([label, option]) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.setAttribute('role', 'radio');
+    button.setAttribute('aria-checked', String(option === value));
+    button.textContent = label;
+    button.onclick = () => {
+      onPick(option);
+      renderSetup();
+    };
+    return button;
+  }));
+}
+
+// Everything in the setup panel depends on the chosen game.
+function renderSetup() {
+  const game = $('game').value;
+  const meta = games[game];
+  for (const card of document.querySelectorAll('.game-card')) {
+    card.setAttribute('aria-checked', String(card.dataset.game === game));
+  }
+  $('setup-kicker').textContent = meta.subtitle;
+  $('setup-title').textContent = meta.title;
+  $('setup-rules').textContent = meta.rules;
+  $('player-capacity').textContent = meta.players;
+  $('size-field').hidden = !meta.sizes;
+  if (meta.sizes) {
+    pickOption($('size-options'), meta.sizes.map(size => [`${size} × ${size}`, size]), chosen.size, value => { chosen.size = value; });
+  }
+  $('level-field').hidden = game !== 'memory_match';
+  if (game === 'memory_match') {
+    pickOption($('level-options'), Object.entries(MEMORY_LEVELS).map(([key, level]) => [level.label, key]), chosen.level, value => { chosen.level = value; });
+  }
+  $('no-options').hidden = Boolean(meta.sizes) || game === 'memory_match';
+  $('create-button').textContent = `Create ${meta.title} room`;
+}
+
+function selectGame(game) {
+  $('game').value = game;
+  chosen.size = games[game].sizes?.[0] ?? chosen.size;
+  renderSetup();
+}
+
+for (const card of document.querySelectorAll('.game-card')) {
+  card.onclick = () => selectGame(card.dataset.game);
+  card.onkeydown = event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      selectGame(card.dataset.game);
+    }
+  };
+}
+selectGame(Object.hasOwn(games, pageGame) ? pageGame : 'dots_and_boxes');
 $('name').value = localStorage.getItem('gamerooms-name') ?? '';
 $('name').addEventListener('change', () => localStorage.setItem('gamerooms-name', $('name').value.trim()));
 const id = () => localStorage.getItem('gamerooms-id') ?? createId();
@@ -105,6 +158,24 @@ function inviteUrl(code) {
   url.searchParams.set('room', code);
   return url;
 }
+// Shows how many rooms are left today and how many are in use right now.
+async function loadRoomStats() {
+  try {
+    const stats = await (await fetch('/api/stats', { cache: 'no-store' })).json();
+    const resets = new Date(stats.resetsAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
+    $('room-stats').textContent = stats.remaining > 0
+      ? `${stats.remaining} of ${stats.dailyLimit} rooms left today · ${stats.inUse} in use`
+      : `All ${stats.dailyLimit} rooms for today are used · ${stats.inUse} in use · new rooms open at ${resets} UTC`;
+    $('room-stats').hidden = false;
+  } catch {
+    // The create form still reports the limit if it is reached.
+  }
+}
+if (!inviteCode) {
+  loadRoomStats();
+  setInterval(loadRoomStats, 60000);
+}
+
 $('join').onsubmit = event => {
   event.preventDefault();
   const code = $('code').value.trim().toUpperCase();
@@ -122,8 +193,8 @@ $('create').onsubmit = async event => {
     const key = $('owner-key').value.trim();
     if (key) headers['X-Owner-Key'] = key;
     const options = {};
-    if (games[game].sizes) options.size = Number($('size').value);
-    if (game === 'memory_match') options.level = $('level').value;
+    if (games[game].sizes) options.size = chosen.size;
+    if (game === 'memory_match') options.level = chosen.level;
     const res = await fetch('/api/rooms', {
       method: 'POST', headers,
       body: JSON.stringify({ game, clientId: id(), options }),
@@ -155,6 +226,30 @@ if (inviteCode) {
   } else notice('That room code is invalid.');
 }
 
+// Draws the invite link as a QR code with a quiet zone, scaled to a crisp square.
+function drawInvite(code) {
+  const qr = globalThis.qrcode(0, 'M');
+  qr.addData(inviteUrl(code).href);
+  qr.make();
+  const canvas = document.createElement('canvas');
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', `Scan to join room ${code}`);
+  const count = qr.getModuleCount();
+  const quietZone = 4;
+  const scale = Math.max(2, Math.floor(200 / (count + quietZone * 2)));
+  canvas.width = canvas.height = (count + quietZone * 2) * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#000';
+  for (let row = 0; row < count; row++) {
+    for (let col = 0; col < count; col++) {
+      if (qr.isDark(row, col)) ctx.fillRect((col + quietZone) * scale, (row + quietZone) * scale, scale, scale);
+    }
+  }
+  $('qr').replaceChildren(canvas);
+}
+
 function enterRoom(code) {
   let ws, retryTimer, pingTimer, board, seat, hostSeat, round, seq, phase;
   let game, renderBoard, previewTimer;
@@ -173,28 +268,7 @@ function enterRoom(code) {
       notice(inviteUrl(code).href);
     }
   };
-  $('share').addEventListener('toggle', () => {
-    if (!$('share').open || $('qr').childElementCount) return;
-    const qr = globalThis.qrcode(0, 'M');
-    qr.addData(inviteUrl(code).href);
-    qr.make();
-    const canvas = document.createElement('canvas');
-    canvas.setAttribute('role', 'img');
-    canvas.setAttribute('aria-label', 'Scan to join this room');
-    const count = qr.getModuleCount();
-    const scale = Math.max(2, Math.floor(160 / count));
-    canvas.width = canvas.height = (count + 8) * scale;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#000';
-    for (let row = 0; row < count; row++) {
-      for (let col = 0; col < count; col++) {
-        if (qr.isDark(row, col)) ctx.fillRect((col + 4) * scale, (row + 4) * scale, scale, scale);
-      }
-    }
-    $('qr').append(canvas);
-  });
+  drawInvite(code);
 
   function send(t, fields = {}) {
     if (ws?.readyState !== WebSocket.OPEN) return false;
@@ -339,7 +413,8 @@ function enterRoom(code) {
     $('start').hidden = !(ready && host && (!playing || finished));
     $('start').disabled = !canStart;
     $('start').textContent = playing ? 'Rematch' : 'Start game';
-    $('leave').hidden = !ready || playing;
+    $('end').hidden = !(ready && playing);
+    $('leave').hidden = !ready;
     $('claim').hidden = !ready || host || players.some(player => player.seat === hostSeat && player.connected);
     const targets = players.filter(player => player.seat !== seat && (!playing || !player.connected));
     const selection = $('remove-player');
@@ -376,7 +451,13 @@ function enterRoom(code) {
     if (window.confirm('Resign this game?')) submitMove({ action: 'resign' });
   };
   $('start').onclick = () => send(phase === 'playing' ? 'rematch' : 'start');
-  $('leave').onclick = () => send('leave');
+  $('end').onclick = () => {
+    if (window.confirm('End this game? The room goes back to the lobby.')) send('end');
+  };
+  $('leave').onclick = () => {
+    if (phase === 'playing' && !window.confirm('Leave the room? This ends the current game for everyone.')) return;
+    send('leave');
+  };
   $('claim').onclick = () => send('claim_host');
   $('remove').onclick = () => send(phase === 'playing' ? 'vacate' : 'kick', { seat: Number($('remove-player').value) });
 
@@ -463,6 +544,12 @@ function enterRoom(code) {
           board = next;
           break;
         }
+        case 'ended':
+          phase = 'lobby';
+          roundSeats = undefined;
+          pending = false;
+          clearPreview();
+          break;
         case 'chat':
           addChat(msg, true);
           break;

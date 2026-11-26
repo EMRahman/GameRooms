@@ -1,0 +1,198 @@
+/* Card artwork and motion, adapted from the Side Quest landing page (same visual language). */
+@keyframes ns-ping { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(2.4); } }
+@keyframes ff-drop { 0% { transform: translateY(0); } 62% { transform: translateY(62.5px); } 78% { transform: translateY(56px); } 100% { transform: translateY(62.5px); } }
+@keyframes ff-win { to { opacity: 1; stroke-dashoffset: 0; } }
+@keyframes rc-spark { from { transform: scale(.5); opacity: .4; } to { transform: scale(1.25); opacity: 1; } }
+@keyframes card-in { to { opacity: 1; } }
+@keyframes card-pop { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: scale(1); } }
+@keyframes ir-fly { to { opacity: 0; transform: translate(-145px, -48px) rotate(-30deg) scale(.4); } }
+@keyframes ir-car { from { opacity: 0; transform: scale(1.5); } to { opacity: 1; transform: scale(1); } }
+.game-card {
+      grid-column: span 4;
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(145deg, rgba(23, 25, 50, .95), rgba(12, 13, 29, .98));
+      box-shadow: 0 1px rgba(255, 255, 255, .04) inset;
+      color: var(--ink);
+      text-decoration: none;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+.game-card.featured { grid-column: span 8; }
+.game-art {
+      position: relative;
+      height: 220px;
+      overflow: hidden;
+      background: var(--card-bg);
+      isolation: isolate;
+    }
+.featured .game-art { height: 310px; }
+.game-art::before,
+    .game-art::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+    }
+.art-label {
+      position: absolute;
+      z-index: 4;
+      top: 17px;
+      left: 17px;
+      padding: 7px 10px;
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 999px;
+      background: rgba(6, 7, 18, .55);
+      color: #fff;
+      font: 750 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+.art-northstar { --card-bg: radial-gradient(circle at 50% 52%, #0c3850, #03121c 74%); }
+.art-northstar::before {
+      inset: 0;
+      background: repeating-radial-gradient(circle at 50% 52%, transparent 0 46px, rgba(100, 232, 223, .09) 46px 47px);
+    }
+.art-connect { --card-bg: radial-gradient(circle at 50% 42%, #2e2266, #120e26 74%); }
+.art-go { --card-bg: radial-gradient(ellipse at 50% 46%, #43392b, #15191b 70%); }
+.art-dots { --card-bg: radial-gradient(circle at 50% 40%, #1e5864, #102c35 76%); }
+.art-memory { --card-bg: radial-gradient(circle at 50% 46%, #30265c, #17132b 74%); }
+.art-routes { --card-bg: radial-gradient(circle at 50% 40%, #3b3125, #120e09 74%); }
+.art-routes::before {
+      inset: 0;
+      background-image: linear-gradient(rgba(232, 176, 75, .06) 1px, transparent 1px), linear-gradient(90deg, rgba(232, 176, 75, .06) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+/* Inline SVG card scenes: a 300 × 150 viewBox, centred and scaled to fit the art box. */
+    .card-svg {
+      position: absolute;
+      z-index: 1;
+      left: 50%;
+      top: 53%;
+      width: min(92%, 520px);
+      height: auto;
+      max-height: 94%;
+      transform: translate(-50%, -50%);
+      filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .45));
+    }
+.ns-ping, .kd-new { opacity: 0; }
+.ff-win { opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100; }
+.bx-draw { stroke-dasharray: 100; stroke-dashoffset: 100; }
+.rc-flip-back { transform: scaleX(.3); }
+.rc-flip-front { transform: scaleX(0); }
+@media (prefers-reduced-motion: no-preference) {
+.kd-new { transition: opacity .3s ease; }
+.kd-capt, .kd-ghost { transition: opacity .35s ease .3s; }
+.bx-draw { transition: stroke-dashoffset .5s ease; }
+.bx-preview { transition: opacity .2s ease; }
+.bx-target { transition: fill-opacity .35s ease .45s; }
+.bx-pencil { transition: transform .5s ease; }
+.rc-flip-back { transition: transform .16s ease-in; }
+.rc-flip-front { transition: transform .2s ease-out; }
+.game-card:is(:hover, :focus-visible) .ns-ping { animation: ns-ping 1.5s ease-out infinite; }
+.game-card:is(:hover, :focus-visible) .ff-drop { animation: ff-drop .6s cubic-bezier(.45, 0, .55, 1) forwards; }
+.game-card:is(:hover, :focus-visible) .ff-win { animation: ff-win .45s ease .55s forwards; }
+.game-card:is(:hover, :focus-visible) .kd-new { opacity: 1; }
+.game-card:is(:hover, :focus-visible) :is(.kd-capt, .kd-ghost, .bx-preview) { opacity: 0; }
+.game-card:is(:hover, :focus-visible) .bx-draw { stroke-dashoffset: 0; }
+.game-card:is(:hover, :focus-visible) .bx-target { fill-opacity: .8; }
+.game-card:is(:hover, :focus-visible) .bx-pencil { transform: translateY(-24px); }
+.game-card:is(:hover, :focus-visible) .rc-flip-back { transform: scaleX(0); }
+.game-card:is(:hover, :focus-visible) .rc-flip-front { transform: scaleX(1); transition-delay: .16s; }
+.game-card:is(:hover, :focus-visible) .rc-spark { animation: rc-spark .9s ease-in-out infinite alternate; }
+}
+@media (prefers-reduced-motion: no-preference) {
+.game-card:is(:hover, :focus-visible) .ir-fly { animation: ir-fly .45s ease-in var(--d) forwards; }
+.game-card:is(:hover, :focus-visible) .ir-car { animation: ir-car .32s cubic-bezier(.3, 1.6, .5, 1) var(--d) forwards; }
+.game-card:is(:hover, :focus-visible) .ir-hi { animation: card-in .3s ease 1.05s forwards; }
+.game-card:is(:hover, :focus-visible) .ir-pts { animation: card-pop .45s cubic-bezier(.3, 1.6, .5, 1) 1.15s forwards; }
+.game-card:is(:hover, :focus-visible) .ir-done { animation: card-pop .45s cubic-bezier(.3, 1.6, .5, 1) 1.35s forwards; }
+}
+.game-copy {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px 18px;
+      align-items: start;
+      padding: 22px 22px 20px;
+      border-top: 1px solid rgba(255, 255, 255, .035);
+      background: linear-gradient(145deg, rgba(23, 25, 50, .96), rgba(12, 13, 29, .98));
+    }
+.game-copy h3 {
+      margin: 0 0 7px;
+      color: #f5f6ff;
+      font: 850 21px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: -.035em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+.game-copy p {
+      max-width: 44ch;
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+.play-arrow {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(92, 243, 255, .25);
+      border-radius: 9px;
+      color: var(--blue);
+      font-size: 18px;
+      transition: transform .25s ease, color .25s ease, background .25s ease;
+    }
+.game-meta {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding-top: 2px;
+    }
+.game-meta span {
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(138, 107, 255, .12);
+      background: rgba(138, 107, 255, .08);
+      color: #949bbc;
+      font: 700 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+.game-card:focus-visible,
+    .quick-game:focus-visible,
+    .surprise:focus-visible,
+    .brand:focus-visible {
+      outline: 3px solid var(--orange);
+      outline-offset: 4px;
+    }
+@media (hover: hover) and (pointer: fine) {
+.game-card:hover {
+        z-index: 1;
+        border-color: rgba(92, 243, 255, .36);
+        box-shadow: var(--shadow);
+        transform: translateY(-6px);
+      }
+.game-card:hover .play-arrow {
+        background: var(--blue);
+        color: #061013;
+        transform: rotate(-35deg);
+      }
+}
+@media (max-width: 900px) {
+.game-card, .game-card.featured { grid-column: span 6; }
+.featured .game-art, .game-art { height: 230px; }
+}
+@media (max-width: 560px) {
+.game-card, .game-card.featured { grid-column: 1 / -1; }
+.featured .game-art, .game-art { height: clamp(210px, 64vw, 280px); }
+.game-copy { padding: 20px 18px 18px; }
+}
+@media (pointer: coarse) {
+.quick-game, .game-card { -webkit-tap-highlight-color: rgba(92, 243, 255, .18); }
+}

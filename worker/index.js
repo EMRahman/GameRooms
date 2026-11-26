@@ -47,6 +47,28 @@ export class Budget extends DurableObject {
     this.sql = ctx.storage.sql;
     this.sql.exec('CREATE TABLE IF NOT EXISTS counters (id TEXT PRIMARY KEY, count INTEGER NOT NULL, expires INTEGER NOT NULL)');
     this.sql.exec('CREATE TABLE IF NOT EXISTS settings (salt TEXT NOT NULL)');
+    this.sql.exec('CREATE TABLE IF NOT EXISTS live (code TEXT PRIMARY KEY)');
+  }
+
+  // Rooms with at least one seated player connected right now.
+  async setLive(code, live) {
+    if (live) this.sql.exec('INSERT OR IGNORE INTO live VALUES (?)', code);
+    else this.sql.exec('DELETE FROM live WHERE code = ?', code);
+  }
+
+  async stats() {
+    const now = Date.now();
+    this.sql.exec('DELETE FROM counters WHERE expires <= ?', now);
+    const roomsToday = this.sql.exec("SELECT count FROM counters WHERE id = 'day'").toArray()[0]?.count ?? 0;
+    const dailyLimit = Math.min(10, limit(this.env.DAILY_ROOM_LIMIT, 10));
+    const inUse = this.sql.exec('SELECT COUNT(*) AS n FROM live').toArray()[0].n;
+    return {
+      dailyLimit,
+      roomsToday,
+      remaining: Math.max(0, dailyLimit - roomsToday),
+      inUse,
+      resetsAt: new Date((Math.floor(now / day) + 1) * day).toISOString(),
+    };
   }
 
   async claim(ip, owner) {
@@ -101,9 +123,13 @@ export default {
       if (!budget.ok) return json({ error: 'Room creation limit reached', resetsAt: budget.resetsAt }, 429);
       for (let attempt = 0; attempt < 8; attempt++) {
         const code = roomCode();
-        if (await env.ROOM.getByName(code).initialize(body.clientId, body.game, options)) return json({ code }, 201);
+        if (await env.ROOM.getByName(code).initialize(body.clientId, body.game, options, code)) return json({ code }, 201);
       }
       return json({ error: 'Could not create a room' }, 503);
+    }
+
+    if (pathname === '/api/stats' && request.method === 'GET') {
+      return json(await env.BUDGET.getByName('rooms').stats());
     }
 
     if (request.method === 'GET' && /^\/(dots_and_boxes|fourfold|go|memory_match|northstar|iron_routes)(\.html)?$/.test(pathname)) {
