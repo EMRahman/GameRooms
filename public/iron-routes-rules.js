@@ -202,15 +202,17 @@ function drawFromDeck(state) {
   return state.deck.pop();
 }
 
+// Fills the face-up row. Three locomotives replace the row, at most three times;
+// the last row dealt always stays, so face-up draws are never lost.
 function refillMarket(state) {
-  for (let tries = 0; tries < 4; tries++) {
+  for (let tries = 0; ; tries++) {
     while (state.market.length < 5) {
       const card = drawFromDeck(state);
       if (!card) break;
       state.market.push(card);
     }
     const locos = state.market.filter(card => card === 'loco').length;
-    if (locos < 3 || state.deck.length + state.discard.length < 5) return;
+    if (tries >= 3 || locos < 3 || state.deck.length + state.discard.length < 5) return;
     log(state, null, 'Three locomotives face up. The face-up cards are replaced.');
     state.discard.push(...state.market);
     state.market = [];
@@ -320,6 +322,8 @@ function claim(state, move) {
   player.score += POINTS[route.len];
   const points = POINTS[route.len];
   log(state, player.seat, `claims ${CITIES[route.a][0]}–${CITIES[route.b][0]} (${route.len}) for ${points} point${points === 1 ? '' : 's'}.`);
+  // Paid cards return to the discard pile, which can refill a row left short by an empty deck.
+  refillMarket(state);
   endTurn(state);
   return true;
 }

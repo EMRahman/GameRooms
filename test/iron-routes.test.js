@@ -97,6 +97,30 @@ test('Iron Routes enforces two draws, the face-up locomotive rule and exact paym
   assert.ok(connected(state.owner, 0, route.a, route.b));
 });
 
+test('Iron Routes keeps a face-up row when locomotive reshuffles run out', () => {
+  const state = makeIronRoutes([0, 1]);
+  finishSetup(state);
+  // Only locomotives remain to draw, so every replacement row has three or more.
+  for (const player of state.players) Object.keys(player.hand).forEach(kind => { player.hand[kind] = 0; });
+  state.market = ['red', 'loco', 'loco', 'blue', 'green'];
+  state.deck = Array(20).fill('loco');
+  state.discard = [];
+  assert.ok(applyIronRoutes(state, 0, { action: 'draw', source: 0 }));
+  assert.equal(state.market.length, 5);
+  assert.ok(state.market.filter(card => card === 'loco').length >= 3);
+
+  // A short row refills once a claim returns cards to the discard pile.
+  const route = ROUTES.find(r => r.c === 'red' && r.len === 2 && r.twin < 0);
+  const fresh = makeIronRoutes([0, 1]);
+  finishSetup(fresh);
+  fresh.market = ['blue'];
+  fresh.deck = [];
+  fresh.discard = [];
+  Object.assign(fresh.players[0].hand, { red: 2 });
+  assert.ok(applyIronRoutes(fresh, 0, { action: 'claim', route: route.id, color: 'red', count: 2, loco: 0 }));
+  assert.equal(fresh.market.length, 3);
+});
+
 test('Iron Routes blocks the twin track with two or three players', () => {
   const state = makeIronRoutes([0, 1]);
   finishSetup(state);
