@@ -1,6 +1,11 @@
 import { makeBoard, playLine } from './dots-rules.js';
 import { makeFourfoldBoard, dropCounter } from './fourfold-rules.js';
 import { drawFourfold } from './fourfold-board.js';
+import { GO_SIZES, makeGoBoard, playGo } from './go-rules.js';
+import { drawGo } from './go-board.js';
+import { MEMORY_LEVELS, makeMemoryBoard, flipCard, memoryWinner } from './memory-rules.js';
+import { drawMemory } from './memory-board.js';
+import { drawNorthstar } from './northstar-board.js';
 
 const $ = id => document.getElementById(id);
 const inviteCode = new URLSearchParams(location.search).get('room')?.trim().toUpperCase();
@@ -10,6 +15,7 @@ const games = {
     title: 'Boxed In',
     subtitle: 'Dots and Boxes',
     rules: 'Draw a line between two dots. Close a box to score and go again. Most boxes wins.',
+    sizes: [4, 5, 6],
     make: ({ size }) => makeBoard(size),
     move: playLine,
     result: board => board.boxes.includes(null) ? undefined : dotsWinner(board.scores),
@@ -21,12 +27,44 @@ const games = {
     make: makeFourfoldBoard,
     move: dropCounter,
     result: board => board.finished ? board.winner : undefined,
+    draw: (container, board, submit) => drawFourfold(container, submit),
+  },
+  go: {
+    title: 'Go',
+    subtitle: 'Area scoring · 6.5 komi',
+    rules: 'Black moves first. Surround territory and capture stones. Two passes score the board as it stands.',
+    sizes: GO_SIZES,
+    make: makeGoBoard,
+    move: playGo,
+    result: board => board.winner,
+    draw: (container, board, submit) => drawGo(container, board.size, submit),
+  },
+  memory_match: {
+    title: 'Memory Match',
+    subtitle: 'Find matching pairs',
+    rules: 'Flip two cards. Find a pair to score and go again. A miss passes the turn.',
+    make: makeMemoryBoard,
+    move: flipCard,
+    result: memoryWinner,
+    draw: drawMemory,
+  },
+  northstar: {
+    title: 'Northstar',
+    subtitle: 'Hidden fleet battle',
+    rules: 'Lock your fleet, then fire at the target grid. A hit earns another shot. Sink all five opposing ships to win.',
+    result: view => view.stage === 'finished' ? view.winner : undefined,
   },
 };
 
 const pageGame = location.pathname.split('/').pop().replace(/\.html$/, '');
 if (Object.hasOwn(games, pageGame)) $('game').value = pageGame;
-$('game').onchange = () => { $('size-field').hidden = $('game').value !== 'dots_and_boxes'; };
+$('game').onchange = () => {
+  const sizes = games[$('game').value].sizes;
+  $('size-field').hidden = !sizes;
+  $('level-field').hidden = $('game').value !== 'memory_match';
+  if (sizes) $('size').replaceChildren(...sizes.map(size => new Option(`${size} × ${size}`, size)));
+};
+$('level').replaceChildren(...Object.entries(MEMORY_LEVELS).map(([key, level]) => new Option(level.label, key)));
 $('game').onchange();
 $('name').value = localStorage.getItem('gamerooms-name') ?? '';
 $('name').addEventListener('change', () => localStorage.setItem('gamerooms-name', $('name').value.trim()));
@@ -67,9 +105,12 @@ $('create').onsubmit = async event => {
     const headers = { 'Content-Type': 'application/json' };
     const key = $('owner-key').value.trim();
     if (key) headers['X-Owner-Key'] = key;
+    const options = {};
+    if (games[game].sizes) options.size = Number($('size').value);
+    if (game === 'memory_match') options.level = $('level').value;
     const res = await fetch('/api/rooms', {
       method: 'POST', headers,
-      body: JSON.stringify({ game, clientId: id(), options: game === 'dots_and_boxes' ? { size: Number($('size').value) } : {} }),
+      body: JSON.stringify({ game, clientId: id(), options }),
     });
     const body = await res.json();
     if (!res.ok) {
@@ -100,7 +141,9 @@ if (inviteCode) {
 
 function enterRoom(code) {
   let ws, retryTimer, pingTimer, board, seat, hostSeat, round, seq, phase;
-  let game, renderBoard;
+  let game, renderBoard, previewTimer;
+  let preview = [];
+  let maxSeats = 2, roundSeats;
   let players = [];
   let checkingRoom = false;
   let retries = 0, terminal = false, ready = false, pending = false, unread = 0;
@@ -143,6 +186,21 @@ function enterRoom(code) {
     return true;
   }
   function submitMove(data) {
+    if (!ready || phase !== 'playing' || pending || preview.length) return;
+    if (game === 'northstar') {
+      notice();
+      pending = send('move', { round, seq: seq + 1, data });
+      render();
+      return;
+    }
+    const next = games[game].move(board, seat, data);
+    if (next === board) {
+      if (game === 'go' && board.turn === seat && board.winner === undefined && !board.cells[data.point]) {
+        notice('That move would leave no liberties or repeat an earlier position.');
+      }
+      return;
+    }
+    notice();
     pending = send('move', { round, seq: seq + 1, data });
     render();
   }
@@ -192,12 +250,25 @@ function enterRoom(code) {
       boxNodes.forEach((node, index) => mark(node, board.boxes[index]));
     };
   }
-  function resetBoard(options) {
-    board = games[game].make(options);
+  function clearPreview() {
+    clearTimeout(previewTimer);
+    preview = [];
+  }
+  function resetBoard(options, seed, view) {
+    clearPreview();
+    board = game === 'northstar' ? view : games[game].make(options, seed, roundSeats ?? []);
     const container = $('board');
     container.classList.toggle('fourfold-board', game === 'fourfold');
     $('paper').classList.toggle('fourfold-paper', game === 'fourfold');
-    renderBoard = game === 'fourfold' ? drawFourfold(container, submitMove) : drawDots(container, board.size);
+    container.classList.toggle('go-board', game === 'go');
+    $('paper').classList.toggle('go-paper', game === 'go');
+    container.classList.toggle('memory-board', game === 'memory_match');
+    $('paper').classList.toggle('memory-paper', game === 'memory_match');
+    container.classList.toggle('northstar-board', game === 'northstar');
+    $('paper').classList.toggle('northstar-paper', game === 'northstar');
+    renderBoard = game === 'northstar'
+      ? drawNorthstar(container, seat, submitMove)
+      : games[game].draw?.(container, board, submitMove) ?? drawDots(container, board.size);
   }
   function mark(node, owner) {
     if (owner == null) delete node.dataset.seat;
@@ -205,16 +276,24 @@ function enterRoom(code) {
   }
   function render() {
     const host = seat === hostSeat;
-    const friend = players.find(player => player.seat !== seat);
     const winner = board ? games[game].result(board) : undefined;
     const finished = winner !== undefined;
-    const both = players.filter(player => player.connected).length === 2;
+    const connected = players.filter(player => player.connected).length;
+    const canStart = connected >= 2 && connected === (roundSeats?.length ?? players.length);
     const playing = phase === 'playing';
-    $('players').replaceChildren(...[0, 1].map(index => {
+    const shownSeats = playing && roundSeats ? roundSeats : Array.from({ length: maxSeats }, (_, index) => index);
+    $('players').classList.toggle('memory-players', game === 'memory_match');
+    $('players').replaceChildren(...shownSeats.map(index => {
       const player = players.find(item => item.seat === index);
       const card = document.createElement('div');
-      card.className = `player player-${index}${playing && !finished && board.turn === index ? ' active' : ''}`;
+      card.className = `player player-${index}${playing && !finished && board?.stage !== 'deployment' && board?.turn === index ? ' active' : ''}`;
       card.textContent = player ? player.name + (index === seat ? ' (you)' : '') + (player.connected ? '' : ' · offline') : 'Open seat';
+      if (game === 'go') {
+        const color = document.createElement('small');
+        color.className = 'go-player-color';
+        color.textContent = index === 0 ? 'Black' : 'White';
+        card.prepend(color);
+      }
       if (board?.scores) {
         const score = document.createElement('strong');
         score.textContent = board.scores[index];
@@ -223,22 +302,40 @@ function enterRoom(code) {
       return card;
     }));
     const name = index => players.find(player => player.seat === index)?.name ?? 'Other player';
-    let status = both ? 'Ready to play' : 'Waiting for a friend';
+    let status = canStart ? 'Ready to play' : 'Waiting for a friend';
     if (playing) {
       if (finished) status = winner === null ? 'Draw' : `${name(winner)} wins`;
-      else status = board.turn === seat ? 'Your turn' : `${name(board.turn)}’s turn`;
+      else if (game === 'northstar' && board.stage === 'deployment') {
+        status = board.locked[seat] ? 'Waiting for the other fleet to lock' : 'Deploy your fleet';
+      } else status = board.turn === seat ? 'Your turn' : `${name(board.turn)}’s turn`;
     }
+    const movesAllowed = ready && playing && !finished && !pending && !preview.length;
+    const canMove = movesAllowed && board.turn === seat;
+    if (playing && game === 'go') {
+      if (board.resigned) status += ' by resignation';
+      else if (board.scores) status += ` by ${Math.abs(board.scores[0] - board.scores[1])} points`;
+      else if (board.passes) status += ' · One pass';
+    }
+    $('go-pass').hidden = $('go-resign').hidden = game !== 'go' || !playing || finished;
+    $('go-pass').disabled = !canMove;
+    $('go-resign').disabled = !movesAllowed;
     $('turn').textContent = ready ? status : terminal ? 'Disconnected' : 'Connecting…';
     $('paper').hidden = !playing;
     $('start').hidden = !(ready && host && (!playing || finished));
-    $('start').disabled = !both;
+    $('start').disabled = !canStart;
     $('start').textContent = playing ? 'Rematch' : 'Start game';
     $('leave').hidden = !ready || playing;
     $('claim').hidden = !ready || host || players.some(player => player.seat === hostSeat && player.connected);
-    $('remove').hidden = !ready || !host || !friend || (playing && friend.connected);
+    const targets = players.filter(player => player.seat !== seat && (!playing || !player.connected));
+    const selection = $('remove-player');
+    const selected = selection.value;
+    selection.replaceChildren(...targets.map(player => new Option(player.name, player.seat)));
+    if (targets.some(player => String(player.seat) === selected)) selection.value = selected;
+    $('remove').hidden = !ready || !host || !targets.length;
+    selection.hidden = $('remove').hidden || maxSeats === 2;
     $('remove').textContent = playing ? 'Free offline seat' : 'Remove player';
     $('chat').querySelector('button').disabled = !ready;
-    renderBoard?.(board, ready && playing && !pending && !finished && board.turn === seat);
+    renderBoard?.(board, canMove, preview, movesAllowed);
   }
   function addChat(message, live = false) {
     const li = document.createElement('li');
@@ -259,10 +356,14 @@ function enterRoom(code) {
     event.preventDefault();
     if (send('chat', { text: $('message').value })) $('message').value = '';
   };
+  $('go-pass').onclick = () => submitMove({ action: 'pass' });
+  $('go-resign').onclick = () => {
+    if (window.confirm('Resign this game?')) submitMove({ action: 'resign' });
+  };
   $('start').onclick = () => send(phase === 'playing' ? 'rematch' : 'start');
   $('leave').onclick = () => send('leave');
   $('claim').onclick = () => send('claim_host');
-  $('remove').onclick = () => send(phase === 'playing' ? 'vacate' : 'kick', { seat: 1 - seat });
+  $('remove').onclick = () => send(phase === 'playing' ? 'vacate' : 'kick', { seat: Number($('remove-player').value) });
 
   async function connect() {
     clearTimeout(retryTimer);
@@ -294,14 +395,16 @@ function enterRoom(code) {
       const msg = JSON.parse(event.data);
       switch (msg.t) {
         case 'welcome':
-          ({ phase, seat, hostSeat, round, seq, players } = msg);
+          ({ phase, seat, hostSeat, round, seq, players, roundSeats } = msg);
+          maxSeats = msg.maxSeats ?? 2;
           game = msg.game;
+          $('player-capacity').textContent = maxSeats === 5 ? '2–5 players' : 'Two players';
           $('game-title').textContent = games[game].title;
           $('game-subtitle').textContent = games[game].subtitle;
           $('game-subtitle').hidden = false;
           $('rules').textContent = games[game].rules;
           document.title = `${games[game].title} · GameRooms`;
-          resetBoard(msg.options);
+          resetBoard(msg.options, msg.seed, msg.view);
           for (const move of msg.log) board = games[game].move(board, move.seat, move.data);
           $('messages').replaceChildren();
           msg.chat.forEach(message => addChat(message));
@@ -318,17 +421,33 @@ function enterRoom(code) {
           break;
         case 'started':
           phase = 'playing';
-          ({ round, players } = msg);
+          ({ round, players, roundSeats } = msg);
           seq = 0;
           pending = false;
-          resetBoard(msg.options);
+          resetBoard(msg.options, msg.seed, msg.view);
           break;
-        case 'move':
+        case 'northstar':
+          if (game !== 'northstar' || msg.round !== round || msg.seq !== seq + 1) return ws.close(1012);
+          seq = msg.seq;
+          pending = false;
+          board = msg.view;
+          break;
+        case 'move': {
           if (msg.round !== round || msg.seq !== seq + 1) return ws.close(1012);
           seq = msg.seq;
           pending = false;
-          board = games[game].move(board, msg.seat, msg.data);
+          clearPreview();
+          const next = games[game].move(board, msg.seat, msg.data);
+          if (game === 'memory_match' && next.turn !== board.turn) {
+            preview = [board.revealed, msg.data.card];
+            previewTimer = setTimeout(() => {
+              clearPreview();
+              render();
+            }, 720);
+          }
+          board = next;
           break;
+        }
         case 'chat':
           addChat(msg, true);
           break;
