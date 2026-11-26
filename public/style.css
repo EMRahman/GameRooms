@@ -638,12 +638,21 @@ button.primary:not(:disabled):hover { background: #a4efd3; }
 .masthead { justify-content: flex-start; }
 .masthead .brand { display: flex; align-items: center; gap: .6rem; color: var(--blue); font-size: 1rem; letter-spacing: .08em; }
 .masthead .brand::before { content: "✦"; display: grid; place-items: center; width: 1.55rem; height: 1.55rem; border-radius: .5rem; background: var(--blue); color: #09211d; font: 900 1rem/1 ui-sans-serif, system-ui, sans-serif; }
-.intro { display: grid; grid-template-columns: minmax(18rem, .84fr) minmax(0, 1.16fr); align-items: center; gap: clamp(1.5rem, 5vw, 4.5rem); margin: clamp(1.25rem, 3.5vw, 3rem) 0 1.5rem; }
-.intro h1 { font-size: clamp(3rem, 7.5vw, 6.5rem); line-height: .91; letter-spacing: -.065em; font-weight: 850; }
-.intro-description { max-width: 31rem; margin: 1rem 0 0; color: #bfd0cf; font-size: clamp(1rem, 1.5vw, 1.2rem); line-height: 1.5; }
+.intro {
+  display: grid;
+  grid-template-columns: minmax(20rem, .9fr) minmax(0, 1.1fr);
+  grid-template-rows: 1fr auto auto 1fr;
+  grid-template-areas: ". art" "copy art" "actions art" ". art";
+  column-gap: clamp(1.5rem, 4vw, 3.5rem);
+  row-gap: 1.25rem;
+  margin: clamp(1.25rem, 3vw, 2.5rem) 0 1rem;
+}
+.intro-copy { grid-area: copy; }
+.intro h1 { font-size: clamp(2.75rem, 5.4vw, 5rem); line-height: .95; letter-spacing: -.05em; font-weight: 850; text-wrap: balance; }
+.intro-description { max-width: 31rem; margin: .9rem 0 0; color: #bfd0cf; font-size: clamp(1rem, 1.4vw, 1.15rem); line-height: 1.5; }
 .intro-description strong { color: var(--blue); }
-.hero-art { display: block; width: 100%; height: auto; border-radius: 1.4rem; border: 1px solid var(--line); }
-.entry-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: stretch; }
+.hero-art { grid-area: art; align-self: center; display: block; width: 100%; height: auto; border-radius: 1.4rem; border: 1px solid var(--line); }
+.entry-panels { grid-area: actions; display: grid; gap: .75rem; align-content: start; min-width: 0; }
 .panel, .game, .chat, .share { background: linear-gradient(145deg, rgba(20, 44, 54, .97), rgba(11, 29, 39, .99)); }
 .setup, .join-panel { display: grid; align-content: start; gap: .65rem; min-width: 0; padding: clamp(.8rem, 1.7vw, 1.2rem); }
 .action-title { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
@@ -655,8 +664,14 @@ button.primary:not(:disabled):hover { background: #a4efd3; }
 .setup-details { border-top: 1px solid var(--line); padding-top: .25rem; }
 .setup-details summary { display: flex; align-items: center; justify-content: space-between; gap: .6rem; min-height: 38px; padding: .3rem 0; color: var(--muted); font-size: .86rem; list-style: none; }
 .setup-details summary::-webkit-details-marker { display: none; }
-.setup-details summary::after { content: "⌄"; color: var(--blue); font-size: 1.1rem; font-weight: 800; }
-.setup-details[open] { display: grid; gap: .7rem; }
+.setup-details summary::after { content: "⌄"; color: var(--blue); font-size: 1.1rem; font-weight: 800; line-height: 1; transition: transform .2s ease; }
+.setup-details[open] summary::after { transform: rotate(180deg); }
+#create { scroll-margin-top: 1rem; }
+.setup-details[open] { padding-bottom: .2rem; }
+/* gap does not apply inside <details>, so space its children directly. */
+.setup-details > :not(summary) { margin: .85rem 0 0; }
+.setup-details > .name-row { margin-top: .35rem; }
+.setup-details > .owner { margin-top: .85rem; }
 .setup-head h3 { margin: 0; font-size: 1.1rem; }
 .setup-head .eyebrow { margin: 0 0 .25rem; }
 .setup-head .rules { margin: .35rem 0 0; font-size: .86rem; }
@@ -667,46 +682,76 @@ button.primary:not(:disabled):hover { background: #a4efd3; }
 .owner label { color: var(--muted); }
 #room-stats { margin: 0; color: var(--muted); font-size: .78rem; }
 #notice { margin: .4rem 0; }
-#invite { width: min(100%, 24rem); padding: 1rem; border: 1px solid var(--line); border-radius: 1rem; background: linear-gradient(145deg, rgba(20, 44, 54, .97), rgba(11, 29, 39, .99)); }
+#invite { width: min(100%, 24rem); margin-top: clamp(1.25rem, 4vw, 2.5rem); padding: 1rem; border: 1px solid var(--line); border-radius: 1rem; background: linear-gradient(145deg, rgba(20, 44, 54, .97), rgba(11, 29, 39, .99)); }
 #invite h2 { font-size: 1.25rem; }
 #invite button { width: 100%; }
 select:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
-.game-picker { margin-top: 1.5rem; }
-.gallery-title { margin: 0 0 .8rem; font-size: 1.15rem; }
+.game-picker { margin-top: clamp(1.25rem, 3vw, 2rem); }
+.gallery-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; margin-bottom: .9rem; }
+.gallery-title { margin: 0; font-size: 1.25rem; }
+.gallery-hint { margin: 0; color: var(--muted); font-size: .9rem; }
 .game-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .game-grid .game-card .game-art { height: 145px; }
 .game-grid .game-card .card-svg { max-height: 88%; }
+.game-grid .game-copy { flex: 1 1 auto; grid-template-rows: 1fr auto; }
 .game-grid .game-card[aria-checked="true"] { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(139, 228, 196, .38), var(--shadow); }
 .game-grid .game-card[aria-checked="true"] .play-arrow { background: var(--blue); color: #09211d; }
+@media (min-width: 1200px) {
+  .game-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 #room-title { margin: 0 0 1rem; font-size: clamp(1.7rem, 4vw, 2.7rem); }
 .intro[hidden] { display: none; }
-@media (max-width: 900px) {
+.site-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .35rem 1.5rem; margin-top: clamp(2rem, 5vw, 3.5rem); padding-top: 1.25rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+.site-footer p { margin: 0; }
+.site-footer a { color: var(--blue); text-decoration-color: rgba(139, 228, 196, .4); text-underline-offset: 3px; }
+.site-footer a:hover { text-decoration-color: currentColor; }
+.site-footer a:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; border-radius: 4px; }
+
+/* Tablets: tagline beside the art, create and join side by side underneath. */
+@media (max-width: 1023px) {
+  .intro {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    grid-template-rows: auto;
+    grid-template-areas: "copy art" "actions actions";
+    align-items: center;
+  }
+  .entry-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
   .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* Phones: one column, actions right under the art. */
 @media (max-width: 760px) {
-  .intro { grid-template-columns: 1fr; gap: .6rem; margin: 1rem 0 1.1rem; }
-  .intro-copy { max-width: 40rem; }
-  .hero-art { width: min(480px, 100%); height: auto; margin: 0 auto; object-fit: contain; object-position: center; }
+  .intro { grid-template-columns: 1fr; grid-template-areas: "copy" "art" "actions"; row-gap: .9rem; margin: 1rem 0 1.1rem; }
+  .hero-art { width: min(560px, 100%); margin: 0 auto; }
   .entry-panels { grid-template-columns: 1fr; gap: .65rem; }
-  .game-picker { margin-top: 1.1rem; }
-  .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .game-grid { gap: 10px; }
   .game-grid .game-card .game-art { height: 125px; }
 }
 @media (max-width: 560px) {
   main { width: calc(100% - 28px); }
   .masthead { min-height: 52px; }
   .masthead .brand { font-size: .86rem; }
-  .intro h1 { font-size: clamp(2.7rem, 12vw, 4.2rem); }
-  .intro-description { margin-top: .55rem; font-size: .94rem; }
-  .hero-art { width: 100%; }
-  .setup, .join-panel { padding: .7rem .8rem; }
+  .intro h1 { font-size: clamp(2.5rem, 11.5vw, 3.6rem); }
+  .intro-description { margin-top: .55rem; font-size: .96rem; }
+  .hero-art { border-radius: 1rem; }
+  .setup, .join-panel { padding: .8rem .85rem; }
   .action-title h2, .join-panel h2 { font-size: 1.08rem; }
-  .action-title p { font-size: .74rem; }
-  .create-row, .join-row { grid-template-columns: minmax(0, 1fr) auto; gap: .4rem; }
-  .create-row button, .join-row button { min-width: 6.65rem; padding-inline: .55rem; font-size: .88rem; }
-  .create-row select, .join-row input { padding-inline: .55rem; font-size: .9rem; }
-  .create-row select, .join-row input, .name-row input, #invite input { font-size: 16px; }
-  .setup-details summary { min-height: 34px; font-size: .8rem; }
-  .game-picker { margin-top: 1rem; }
-  .game-grid .game-card .game-art { height: clamp(100px, 30vw, 135px); }
+  .create-row, .join-row { grid-template-columns: minmax(0, 1fr) auto; gap: .45rem; }
+  .create-row button, .join-row button { min-width: 6.65rem; padding-inline: .7rem; font-size: .92rem; }
+  .create-row select, .join-row input { padding-inline: .6rem; }
+  /* 16px keeps iOS Safari from zooming into fields on focus. */
+  .create-row select, .join-row input, .name-row input, .owner input, #invite input { font-size: 16px; }
+  .name-row { gap: .35rem; }
+  .name-row input { width: 100%; }
+  .setup-details summary { min-height: 40px; font-size: .84rem; }
+  .gallery-title { font-size: 1.1rem; }
+  .gallery-hint { font-size: .82rem; }
+  /* Compact two-up cards: art, name and player count. */
+  .game-grid { gap: 10px; }
+  .game-grid .game-card { border-radius: 16px; }
+  .game-grid .game-card .game-art { height: clamp(84px, 27vw, 120px); }
+  .game-grid .art-label, .game-grid .game-copy p, .game-grid .play-arrow, .game-grid .game-meta span + span { display: none; }
+  .game-grid .game-copy { grid-template-columns: 1fr; gap: 7px; padding: 11px 12px 13px; }
+  .game-grid .game-copy h3 { margin: 0; font-size: 15px; }
+  .game-grid .game-card[aria-checked="true"] { transform: none; }
+  .site-footer { flex-direction: column; font-size: .84rem; }
 }

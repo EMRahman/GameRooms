@@ -167,7 +167,10 @@ for (const card of document.querySelectorAll('.game-card')) {
   card.onclick = () => {
     selectGame(card.dataset.game);
     $('setup-details').open = true;
-    $('game').focus();
+    // The library sits below the create panel, so bring the next step back into view.
+    const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('create').scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'nearest' });
+    $('create-button').focus({ preventScroll: true });
   };
   card.onkeydown = event => {
     if (event.key === 'Enter' || event.key === ' ') {

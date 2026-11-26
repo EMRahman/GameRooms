@@ -1,43 +1,51 @@
 # Team Side Quests
 
-[![Friends around the globe playing together on phones, tablets, and laptops](public/world-play.jpg)](#play)
+[![Friends around the globe playing together on phones, tablets, and laptops](public/world-play.jpg)](https://gamerooms.ehsanr-web.workers.dev/)
 
-Turn a quick game into a shared side quest. Pick a game, create a room, then invite friends with its room code, link, or QR code. Join from your browser on any device.
+**▶ Play now: [Cloudflare](https://gamerooms.ehsanr-web.workers.dev/) · [GitHub Pages](https://emrahman.github.io/GameRooms/)**
 
-These eight multiplayer games come from the original [Side Quest arcade](https://emrahman.github.io/Games/).
+Quick multiplayer games for friends. No account needed: just open the page in a browser on your phone, tablet, or computer. Both links use the same Cloudflare Worker for rooms, so they share the same room limits.
 
-- **Boxed In** — claim squares by drawing the edges.
-- **Fourfold** — connect four counters in a row.
-- **Go** — surround territory on a shared board.
-- **Memory Match** — find matching pairs.
-- **Northstar** — find and sink your opponent’s fleet.
-- **Iron Routes** — build a rail network and compete for points.
-- **Landlord** — trade properties and compete for wealth.
-- **Conquest** — vie for control of the map.
+## How it works
 
-## Play
+1. **Pick a game** from the library.
+2. **Create a room.**
+3. **Invite friends** with the room code, invite link, or QR code. Each room has its own chat.
 
-Deploy a copy with the button below. When deployment finishes, open its `workers.dev` address, create a room, and share the room code or invite link.
+## Games
 
-Play on [Cloudflare](https://gamerooms.ehsanr-web.workers.dev/) or [GitHub Pages](https://emrahman.github.io/GameRooms/). Both use the Cloudflare Worker for rooms and share its room limits.
+These eight games come from the original [Side Quest arcade](https://emrahman.github.io/Games/).
+
+| Game | Players | What you do |
+|---|---|---|
+| **Boxed In** | 2 | Claim squares by drawing the edges. |
+| **Fourfold** | 2 | Connect four counters in a row. |
+| **Go** | 2 | Surround territory on a shared board. |
+| **Memory Match** | 2–5 | Find matching pairs. |
+| **Northstar** | 2 | Find and sink your opponent’s fleet. |
+| **Iron Routes** | 2–5 | Build a rail network and compete for points. |
+| **Landlord** | 2–6 | Trade properties and compete for wealth. |
+| **Conquest** | 2–6 | Vie for control of the map. |
+
+## Deploy your own
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2FEMRahman%2FGameRooms)
 
-The button deploys the game pages, API, and two SQLite-backed Durable Objects as one Worker on Workers Free.
+The button deploys the game pages, API, and two SQLite-backed Durable Objects as one Worker on Workers Free. When it finishes, open your `workers.dev` address, create a room, and share the code or invite link.
 
-## Room limits
+### Room limits
 
-Each deployment allows up to **10 new rooms per UTC day**, with a default limit of **three rooms per network per hour**. To create rooms beyond those limits, set the optional `OWNER_KEY` Worker secret and enter it under **Owner key** in the create panel’s settings. Owner-created rooms still count toward the daily total.
+Each deployment allows up to **10 new rooms per UTC day**, and by default **three rooms per network per hour**. To create rooms beyond those limits, set the optional `OWNER_KEY` Worker secret, then enter it under **Name & game settings → Owner key** when you create a room. Owner-created rooms still count toward the daily total.
 
 ## Develop locally
 
-With Node.js 24 or later:
+You need Node.js 24 or later:
 
 ```sh
 npm install
 npm run dev
 ```
 
-With the pinned Wrangler version, use `npm run dev -- --compatibility-date 2026-09-30` if the default future compatibility date causes a local startup error.
+If the default future compatibility date causes a local startup error with the pinned Wrangler version, run `npm run dev -- --compatibility-date 2026-09-30`.
 
-Use two separate browser profiles to join the same room locally. Run `npm test` for the game, room, and quota tests.
+To join the same room locally, use two separate browser profiles. Run `npm test` to run the game, room, and quota tests.
