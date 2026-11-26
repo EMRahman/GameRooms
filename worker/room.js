@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
-import { defaultGame, clientIdValid, roomMove } from './protocol.js';
-import { makeBattle, applyNorthstar, northstarView } from './northstar.js';
+import { defaultGame, clientIdValid, maxSeats, roomMove } from './protocol.js';
+import { authoritative } from './authoritative.js';
 
 const hour = 3600000;
 const encoder = new TextEncoder();
@@ -18,7 +18,7 @@ export class GameRoom extends DurableObject {
     if (this.room) return false;
     this.sql.exec('CREATE TABLE IF NOT EXISTS moves (round INTEGER, seq INTEGER, seat INTEGER, data TEXT, PRIMARY KEY (round, seq))');
     this.sql.exec('CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY, seat INTEGER, name TEXT, text TEXT, ts INTEGER)');
-    const seats = Array(game === 'memory_match' ? 5 : 2).fill(null);
+    const seats = Array(maxSeats(game)).fill(null);
     seats[0] = { clientId, name: 'Player 1' };
     this.room = {
       game, options, phase: 'lobby', round: 0, seq: 0, seed: null, count: 0,
@@ -31,6 +31,11 @@ export class GameRoom extends DurableObject {
   get room() {
     const room = this.storage.kv.get('room');
     if (room && !room.game) return { ...room, game: defaultGame, options: { size: room.size } };
+    // Rooms saved before the authoritative registry kept Northstar's state as `battle`.
+    if (room?.battle) {
+      const { battle, ...rest } = room;
+      return { ...rest, state: battle };
+    }
     return room;
   }
   set room(room) { this.storage.kv.put('room', room); }
@@ -58,10 +63,12 @@ export class GameRoom extends DurableObject {
     for (const ws of this.seated()) send(ws, message);
   }
 
-  sendNorthstar(room, message) {
+  // Sends each seat its own view of an authoritative game's state.
+  sendViews(room, message) {
+    const rules = authoritative[room.game];
     for (const ws of this.seated()) {
       const { seat } = ws.deserializeAttachment();
-      send(ws, { ...message, view: northstarView(room.battle, seat) });
+      send(ws, { ...message, view: rules.view(room.state, seat) });
     }
   }
 
@@ -107,30 +114,33 @@ export class GameRoom extends DurableObject {
         const roster = room.roundSeats ?? room.seats.flatMap((player, seat) => player ? [seat] : []);
         if (!host || roster.length < 2 || connected.length !== roster.length ||
             (msg.t === 'start') !== (room.phase === 'lobby')) return error('bad_request');
-        const northstar = room.game === 'northstar';
-        if (northstar && msg.t === 'rematch' && room.battle?.stage !== 'finished') return error('bad_request');
+        const rules = authoritative[room.game];
+        if (rules && msg.t === 'rematch' && !rules.finished(room.state)) return error('bad_request');
         room.roundSeats = roster;
         room.phase = 'playing';
         room.round++;
         room.seq = 0;
-        room.seed = northstar ? null : crypto.getRandomValues(new Uint32Array(1))[0];
-        if (northstar) room.battle = makeBattle();
+        room.seed = rules ? null : crypto.getRandomValues(new Uint32Array(1))[0];
+        if (rules) room.state = rules.make(roster);
         this.room = room;
         const started = { t: 'started', round: room.round, seed: room.seed, options: room.options, roundSeats: room.roundSeats, players: this.players(room) };
-        if (northstar) this.sendNorthstar(room, started);
+        if (rules) this.sendViews(room, started);
         else this.broadcast(started);
         break;
       }
       case 'move': {
         if (room.phase !== 'playing') return error('bad_request');
-        if (msg.round !== room.round || msg.seq !== room.seq + 1) return send(ws, { t: 'error', code: 'seq_mismatch', expectedSeq: room.seq + 1 });
+        const rules = authoritative[room.game];
+        // The server validates authoritative moves against its own state, so a stale `seq`
+        // (for example two players choosing tickets at once) is harmless there.
+        if (msg.round !== room.round || (!rules && msg.seq !== room.seq + 1)) return send(ws, { t: 'error', code: 'seq_mismatch', expectedSeq: room.seq + 1 });
         if (room.count >= 2000) return error('room_limit');
-        if (room.game === 'northstar') {
-          if (!applyNorthstar(room.battle, seat, msg.data)) return error('bad_request');
+        if (rules) {
+          if (!rules.apply(room.state, seat, msg.data)) return error('bad_request');
           room.seq++;
           room.count++;
           this.room = room;
-          this.sendNorthstar(room, { t: 'northstar', round: room.round, seq: room.seq });
+          this.sendViews(room, { t: 'state', round: room.round, seq: room.seq });
           break;
         }
         const data = roomMove(room.game, room.options, msg.data);
@@ -211,7 +221,7 @@ export class GameRoom extends DurableObject {
     const log = this.sql.exec('SELECT seq, seat, data FROM moves WHERE round = ? ORDER BY seq', room.round)
       .toArray().map(move => ({ ...move, data: JSON.parse(move.data) }));
     const chat = this.sql.exec('SELECT * FROM chat ORDER BY id DESC LIMIT 100').toArray().reverse();
-    const view = room.battle ? northstarView(room.battle, seat) : undefined;
+    const view = room.state ? authoritative[room.game].view(room.state, seat) : undefined;
     send(ws, { t: 'welcome', view, game: room.game, phase: room.phase, round: room.round, seq: room.seq, seed: room.seed, options: room.options, seat,
       hostSeat: room.hostSeat, maxSeats: room.seats.length, roundSeats: room.roundSeats, players: this.players(room), log, chat });
     this.roster(room);

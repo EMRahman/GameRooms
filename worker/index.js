@@ -106,7 +106,7 @@ export default {
       return json({ error: 'Could not create a room' }, 503);
     }
 
-    if (request.method === 'GET' && /^\/(dots_and_boxes|fourfold|go|memory_match|northstar)(\.html)?$/.test(pathname)) {
+    if (request.method === 'GET' && /^\/(dots_and_boxes|fourfold|go|memory_match|northstar|iron_routes)(\.html)?$/.test(pathname)) {
       return env.ASSETS.fetch(new URL('/', url));
     }
 

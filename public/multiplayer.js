@@ -6,6 +6,7 @@ import { drawGo } from './go-board.js';
 import { MEMORY_LEVELS, makeMemoryBoard, flipCard, memoryWinner } from './memory-rules.js';
 import { drawMemory } from './memory-board.js';
 import { drawNorthstar } from './northstar-board.js';
+import { drawIronRoutes } from './iron-routes-board.js';
 
 const $ = id => document.getElementById(id);
 const inviteCode = new URLSearchParams(location.search).get('room')?.trim().toUpperCase();
@@ -52,7 +53,21 @@ const games = {
     title: 'Northstar',
     subtitle: 'Hidden fleet battle',
     rules: 'Lock your fleet, then fire at the target grid. A hit earns another shot. Sink all five opposing ships to win.',
+    authoritative: true,
     result: view => view.stage === 'finished' ? view.winner : undefined,
+    status: (view, seat) => view.stage !== 'deployment' ? undefined
+      : view.locked[seat] ? 'Waiting for the other fleet to lock' : 'Deploy your fleet',
+    draw: (container, view, submit, seat) => drawNorthstar(container, seat, submit),
+  },
+  iron_routes: {
+    title: 'Iron Routes',
+    subtitle: 'Railway building · 2–5 players',
+    rules: 'Each turn, draw two train cards, claim a route with matching cards, or take destination tickets. Finished tickets score; unfinished ones cost their value. The longest line earns 12 points.',
+    authoritative: true,
+    result: view => view.over ? view.winner : undefined,
+    status: (view, seat) => !view.setup ? undefined
+      : view.me?.pending.length ? 'Choose your starting tickets' : 'Waiting for others to choose tickets',
+    draw: (container, view, submit, seat, nameOf) => drawIronRoutes(container, seat, submit, nameOf),
   },
 };
 
@@ -62,6 +77,7 @@ $('game').onchange = () => {
   const sizes = games[$('game').value].sizes;
   $('size-field').hidden = !sizes;
   $('level-field').hidden = $('game').value !== 'memory_match';
+  $('player-capacity').textContent = { memory_match: '2–5 players', iron_routes: '2–5 players' }[$('game').value] ?? 'Two players';
   if (sizes) $('size').replaceChildren(...sizes.map(size => new Option(`${size} × ${size}`, size)));
 };
 $('level').replaceChildren(...Object.entries(MEMORY_LEVELS).map(([key, level]) => new Option(level.label, key)));
@@ -187,7 +203,7 @@ function enterRoom(code) {
   }
   function submitMove(data) {
     if (!ready || phase !== 'playing' || pending || preview.length) return;
-    if (game === 'northstar') {
+    if (games[game].authoritative) {
       notice();
       pending = send('move', { round, seq: seq + 1, data });
       render();
@@ -256,7 +272,7 @@ function enterRoom(code) {
   }
   function resetBoard(options, seed, view) {
     clearPreview();
-    board = game === 'northstar' ? view : games[game].make(options, seed, roundSeats ?? []);
+    board = games[game].authoritative ? view : games[game].make(options, seed, roundSeats ?? []);
     const container = $('board');
     container.classList.toggle('fourfold-board', game === 'fourfold');
     $('paper').classList.toggle('fourfold-paper', game === 'fourfold');
@@ -266,9 +282,10 @@ function enterRoom(code) {
     $('paper').classList.toggle('memory-paper', game === 'memory_match');
     container.classList.toggle('northstar-board', game === 'northstar');
     $('paper').classList.toggle('northstar-paper', game === 'northstar');
-    renderBoard = game === 'northstar'
-      ? drawNorthstar(container, seat, submitMove)
-      : games[game].draw?.(container, board, submitMove) ?? drawDots(container, board.size);
+    container.classList.toggle('iron-board', game === 'iron_routes');
+    $('paper').classList.toggle('iron-paper', game === 'iron_routes');
+    const nameOf = index => players.find(player => player.seat === index)?.name ?? `Player ${index + 1}`;
+    renderBoard = games[game].draw?.(container, board, submitMove, seat, nameOf) ?? drawDots(container, board.size);
   }
   function mark(node, owner) {
     if (owner == null) delete node.dataset.seat;
@@ -282,7 +299,7 @@ function enterRoom(code) {
     const canStart = connected >= 2 && connected === (roundSeats?.length ?? players.length);
     const playing = phase === 'playing';
     const shownSeats = playing && roundSeats ? roundSeats : Array.from({ length: maxSeats }, (_, index) => index);
-    $('players').classList.toggle('memory-players', game === 'memory_match');
+    $('players').classList.toggle('memory-players', maxSeats > 2);
     $('players').replaceChildren(...shownSeats.map(index => {
       const player = players.find(item => item.seat === index);
       const card = document.createElement('div');
@@ -294,7 +311,7 @@ function enterRoom(code) {
         color.textContent = index === 0 ? 'Black' : 'White';
         card.prepend(color);
       }
-      if (board?.scores) {
+      if (playing && board?.scores?.[index] !== undefined) {
         const score = document.createElement('strong');
         score.textContent = board.scores[index];
         card.append(score);
@@ -305,9 +322,7 @@ function enterRoom(code) {
     let status = canStart ? 'Ready to play' : 'Waiting for a friend';
     if (playing) {
       if (finished) status = winner === null ? 'Draw' : `${name(winner)} wins`;
-      else if (game === 'northstar' && board.stage === 'deployment') {
-        status = board.locked[seat] ? 'Waiting for the other fleet to lock' : 'Deploy your fleet';
-      } else status = board.turn === seat ? 'Your turn' : `${name(board.turn)}’s turn`;
+      else status = games[game].status?.(board, seat) ?? (board.turn === seat ? 'Your turn' : `${name(board.turn)}’s turn`);
     }
     const movesAllowed = ready && playing && !finished && !pending && !preview.length;
     const canMove = movesAllowed && board.turn === seat;
@@ -398,7 +413,7 @@ function enterRoom(code) {
           ({ phase, seat, hostSeat, round, seq, players, roundSeats } = msg);
           maxSeats = msg.maxSeats ?? 2;
           game = msg.game;
-          $('player-capacity').textContent = maxSeats === 5 ? '2–5 players' : 'Two players';
+          $('player-capacity').textContent = maxSeats > 2 ? `2–${maxSeats} players` : 'Two players';
           $('game-title').textContent = games[game].title;
           $('game-subtitle').textContent = games[game].subtitle;
           $('game-subtitle').hidden = false;
@@ -426,8 +441,8 @@ function enterRoom(code) {
           pending = false;
           resetBoard(msg.options, msg.seed, msg.view);
           break;
-        case 'northstar':
-          if (game !== 'northstar' || msg.round !== round || msg.seq !== seq + 1) return ws.close(1012);
+        case 'state':
+          if (!games[game].authoritative || msg.round !== round || msg.seq !== seq + 1) return ws.close(1012);
           seq = msg.seq;
           pending = false;
           board = msg.view;
