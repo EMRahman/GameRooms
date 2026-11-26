@@ -1,6 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import { game, clientIdValid } from './protocol.js';
-import { validLine } from '../public/dots-rules.js';
+import { defaultGame, clientIdValid, roomMove } from './protocol.js';
 
 const hour = 3600000;
 const encoder = new TextEncoder();
@@ -14,24 +13,28 @@ export class GameRoom extends DurableObject {
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"t":"ping","v":1}', '{"t":"pong","v":1}'));
   }
 
-  async initialize(clientId, size) {
+  async initialize(clientId, game, options) {
     if (this.room) return false;
     this.sql.exec('CREATE TABLE IF NOT EXISTS moves (round INTEGER, seq INTEGER, seat INTEGER, data TEXT, PRIMARY KEY (round, seq))');
     this.sql.exec('CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY, seat INTEGER, name TEXT, text TEXT, ts INTEGER)');
     this.room = {
-      size, phase: 'lobby', round: 0, seq: 0, seed: null, count: 0,
+      game, options, phase: 'lobby', round: 0, seq: 0, seed: null, count: 0,
       hostSeat: 0, seats: [{ clientId, name: 'Player 1' }, null], blocked: [],
     };
     await this.storage.setAlarm(Date.now() + hour);
     return true;
   }
 
-  get room() { return this.storage.kv.get('room'); }
+  get room() {
+    const room = this.storage.kv.get('room');
+    if (room && !room.game) return { ...room, game: defaultGame, options: { size: room.size } };
+    return room;
+  }
   set room(room) { this.storage.kv.put('room', room); }
 
   info() {
     const room = this.room;
-    if (room) return { game, phase: room.phase, maxSeats: 2, seatsTaken: room.seats.filter(Boolean).length };
+    if (room) return { game: room.game, phase: room.phase, maxSeats: 2, seatsTaken: room.seats.filter(Boolean).length };
     return null;
   }
 
@@ -96,15 +99,14 @@ export class GameRoom extends DurableObject {
         room.seq = 0;
         room.seed = crypto.getRandomValues(new Uint32Array(1))[0];
         this.room = room;
-        this.broadcast({ t: 'started', round: room.round, seed: room.seed, options: { size: room.size }, players: this.players(room) });
+        this.broadcast({ t: 'started', round: room.round, seed: room.seed, options: room.options, players: this.players(room) });
         break;
       }
       case 'move': {
-        if (room.phase !== 'playing' || !validLine(room.size, msg.data)) return error('bad_request');
+        const data = roomMove(room.game, room.options, msg.data);
+        if (room.phase !== 'playing' || !data) return error('bad_request');
         if (msg.round !== room.round || msg.seq !== room.seq + 1) return send(ws, { t: 'error', code: 'seq_mismatch', expectedSeq: room.seq + 1 });
         if (room.count >= 2000) return error('room_limit');
-        const { axis, row, col } = msg.data;
-        const data = { axis, row, col };
         this.storage.transactionSync(() => {
           room.seq++;
           room.count++;
@@ -178,7 +180,7 @@ export class GameRoom extends DurableObject {
     const log = this.sql.exec('SELECT seq, seat, data FROM moves WHERE round = ? ORDER BY seq', room.round)
       .toArray().map(move => ({ ...move, data: JSON.parse(move.data) }));
     const chat = this.sql.exec('SELECT * FROM chat ORDER BY id DESC LIMIT 100').toArray().reverse();
-    send(ws, { t: 'welcome', game, phase: room.phase, round: room.round, seq: room.seq, seed: room.seed, options: { size: room.size }, seat,
+    send(ws, { t: 'welcome', game: room.game, phase: room.phase, round: room.round, seq: room.seq, seed: room.seed, options: room.options, seat,
       hostSeat: room.hostSeat, players: this.players(room), log, chat });
     this.roster(room);
     await this.storage.setAlarm(Date.now() + 48 * hour);

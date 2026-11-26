@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import { game, clientIdValid } from './protocol.js';
+import { roomOptions, clientIdValid } from './protocol.js';
 export { GameRoom } from './room.js';
 
 const alphabet = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -92,8 +92,8 @@ export default {
       } catch {
         return json({ error: 'Invalid request' }, 400);
       }
-      const size = body?.options?.size ?? 4;
-      if (body?.game !== game || !clientIdValid(body.clientId) || ![4, 5, 6].includes(size)) {
+      const options = roomOptions(body?.game, body?.options);
+      if (!options || !clientIdValid(body.clientId)) {
         return json({ error: 'Invalid game, player or board size' }, 400);
       }
       const owner = await ownerRequest(request, env.OWNER_KEY);
@@ -101,9 +101,13 @@ export default {
       if (!budget.ok) return json({ error: 'Room creation limit reached', resetsAt: budget.resetsAt }, 429);
       for (let attempt = 0; attempt < 8; attempt++) {
         const code = roomCode();
-        if (await env.ROOM.getByName(code).initialize(body.clientId, size)) return json({ code }, 201);
+        if (await env.ROOM.getByName(code).initialize(body.clientId, body.game, options)) return json({ code }, 201);
       }
       return json({ error: 'Could not create a room' }, 503);
+    }
+
+    if (request.method === 'GET' && /^\/(dots_and_boxes|fourfold)(\.html)?$/.test(pathname)) {
+      return env.ASSETS.fetch(new URL('/', url));
     }
 
     const match = pathname.match(roomRoute);

@@ -1,12 +1,41 @@
 import { makeBoard, playLine } from './dots-rules.js';
+import { makeFourfoldBoard, dropCounter } from './fourfold-rules.js';
+import { drawFourfold } from './fourfold-board.js';
 
 const $ = id => document.getElementById(id);
 const inviteCode = new URLSearchParams(location.search).get('room')?.trim().toUpperCase();
 const codePattern = /^[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5}$/;
-const game = 'dots_and_boxes';
+const games = {
+  dots_and_boxes: {
+    title: 'Boxed In',
+    subtitle: 'Dots and Boxes',
+    rules: 'Draw a line between two dots. Close a box to score and go again. Most boxes wins.',
+    make: ({ size }) => makeBoard(size),
+    move: playLine,
+    result: board => board.boxes.includes(null) ? undefined : dotsWinner(board.scores),
+  },
+  fourfold: {
+    title: 'Fourfold',
+    subtitle: 'Four in a Row',
+    rules: 'Choose a column to drop a counter. Connect four horizontally, vertically, or diagonally to win.',
+    make: makeFourfoldBoard,
+    move: dropCounter,
+    result: board => board.finished ? board.winner : undefined,
+  },
+};
+
+const pageGame = location.pathname.split('/').pop().replace(/\.html$/, '');
+if (Object.hasOwn(games, pageGame)) $('game').value = pageGame;
+$('game').onchange = () => { $('size-field').hidden = $('game').value !== 'dots_and_boxes'; };
+$('game').onchange();
 $('name').value = localStorage.getItem('gamerooms-name') ?? '';
 $('name').addEventListener('change', () => localStorage.setItem('gamerooms-name', $('name').value.trim()));
 const id = () => localStorage.getItem('gamerooms-id') ?? createId();
+
+function dotsWinner([first, second]) {
+  if (first === second) return null;
+  return first > second ? 0 : 1;
+}
 
 function createId() {
   const value = crypto.randomUUID();
@@ -31,6 +60,7 @@ $('join').onsubmit = event => {
 $('create').onsubmit = async event => {
   event.preventDefault();
   const button = event.submitter;
+  const game = $('game').value;
   button.disabled = true;
   notice();
   try {
@@ -39,14 +69,14 @@ $('create').onsubmit = async event => {
     if (key) headers['X-Owner-Key'] = key;
     const res = await fetch('/api/rooms', {
       method: 'POST', headers,
-      body: JSON.stringify({ game, clientId: id(), options: { size: Number($('size').value) } }),
+      body: JSON.stringify({ game, clientId: id(), options: game === 'dots_and_boxes' ? { size: Number($('size').value) } : {} }),
     });
     const body = await res.json();
     if (!res.ok) {
       notice(body.resetsAt ? `Room creation reopens at ${new Date(body.resetsAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.` : body.error);
       return;
     }
-    location.href = new URL(`./dots_and_boxes.html?room=${body.code}`, location.href);
+    location.href = new URL(`./${game}.html?room=${body.code}`, location.href);
   } catch {
     notice('Service busy. Try again shortly.');
   } finally {
@@ -63,14 +93,15 @@ if (inviteCode) {
       event.preventDefault();
       session ??= enterRoom(inviteCode);
     };
-    const autoJoin = sessionStorage.getItem(`playing:${inviteCode}`) || ['/dots_and_boxes', '/dots_and_boxes.html'].includes(location.pathname);
+    const autoJoin = sessionStorage.getItem(`playing:${inviteCode}`) || Object.hasOwn(games, pageGame);
     if (autoJoin) session = enterRoom(inviteCode);
   } else notice('That room code is invalid.');
 }
 
 function enterRoom(code) {
   let ws, retryTimer, pingTimer, board, seat, hostSeat, round, seq, phase;
-  let players = [], edgeButtons = [], boxNodes = [];
+  let game, renderBoard;
+  let players = [];
   let checkingRoom = false;
   let retries = 0, terminal = false, ready = false, pending = false, unread = 0;
   if (matchMedia('(max-width: 710px)').matches) $('chat-panel').open = false;
@@ -111,11 +142,15 @@ function enterRoom(code) {
     ws.send(JSON.stringify({ t, v: 1, ...fields }));
     return true;
   }
-  function drawBoard(size) {
-    const container = $('board');
+  function submitMove(data) {
+    pending = send('move', { round, seq: seq + 1, data });
+    render();
+  }
+  function drawDots(container, size) {
+    container.setAttribute('aria-label', 'Dots and Boxes board');
     container.replaceChildren();
-    edgeButtons = [];
-    boxNodes = [];
+    const edgeButtons = [];
+    const boxNodes = [];
     const place = (node, row, col) => {
       node.style.top = `${row / size * 100}%`;
       node.style.left = `${col / size * 100}%`;
@@ -142,15 +177,27 @@ function enterRoom(code) {
           button.style[axis === 'h' ? 'width' : 'height'] = `${100 / size}%`;
           place(button, row, col);
           const line = { axis, row, col };
-          button.onclick = () => {
-            pending = send('move', { round, seq: seq + 1, data: line });
-            render();
-          };
+          button.onclick = () => submitMove(line);
           const index = row * (axis === 'h' ? size : size + 1) + col;
           edgeButtons.push({ button, axis, index });
         }
       }
     }
+    return (board, canMove) => {
+      for (const { button, axis, index } of edgeButtons) {
+        const owner = (axis === 'h' ? board.horizontal : board.vertical)[index];
+        mark(button, owner);
+        button.disabled = !canMove || owner !== null;
+      }
+      boxNodes.forEach((node, index) => mark(node, board.boxes[index]));
+    };
+  }
+  function resetBoard(options) {
+    board = games[game].make(options);
+    const container = $('board');
+    container.classList.toggle('fourfold-board', game === 'fourfold');
+    $('paper').classList.toggle('fourfold-paper', game === 'fourfold');
+    renderBoard = game === 'fourfold' ? drawFourfold(container, submitMove) : drawDots(container, board.size);
   }
   function mark(node, owner) {
     if (owner == null) delete node.dataset.seat;
@@ -159,7 +206,8 @@ function enterRoom(code) {
   function render() {
     const host = seat === hostSeat;
     const friend = players.find(player => player.seat !== seat);
-    const finished = board && !board.boxes.includes(null);
+    const winner = board ? games[game].result(board) : undefined;
+    const finished = winner !== undefined;
     const both = players.filter(player => player.connected).length === 2;
     const playing = phase === 'playing';
     $('players').replaceChildren(...[0, 1].map(index => {
@@ -167,15 +215,17 @@ function enterRoom(code) {
       const card = document.createElement('div');
       card.className = `player player-${index}${playing && !finished && board.turn === index ? ' active' : ''}`;
       card.textContent = player ? player.name + (index === seat ? ' (you)' : '') + (player.connected ? '' : ' · offline') : 'Open seat';
-      const score = document.createElement('strong');
-      score.textContent = board?.scores[index] ?? 0;
-      card.append(score);
+      if (board?.scores) {
+        const score = document.createElement('strong');
+        score.textContent = board.scores[index];
+        card.append(score);
+      }
       return card;
     }));
     const name = index => players.find(player => player.seat === index)?.name ?? 'Other player';
     let status = both ? 'Ready to play' : 'Waiting for a friend';
     if (playing) {
-      if (finished) status = board.scores[0] === board.scores[1] ? 'Draw' : `${name(board.scores[0] > board.scores[1] ? 0 : 1)} wins`;
+      if (finished) status = winner === null ? 'Draw' : `${name(winner)} wins`;
       else status = board.turn === seat ? 'Your turn' : `${name(board.turn)}’s turn`;
     }
     $('turn').textContent = ready ? status : terminal ? 'Disconnected' : 'Connecting…';
@@ -188,13 +238,7 @@ function enterRoom(code) {
     $('remove').hidden = !ready || !host || !friend || (playing && friend.connected);
     $('remove').textContent = playing ? 'Free offline seat' : 'Remove player';
     $('chat').querySelector('button').disabled = !ready;
-    if (!board) return;
-    for (const { button, axis, index } of edgeButtons) {
-      const owner = (axis === 'h' ? board.horizontal : board.vertical)[index];
-      mark(button, owner);
-      button.disabled = !ready || pending || finished || board.turn !== seat || owner !== null;
-    }
-    boxNodes.forEach((node, index) => mark(node, board.boxes[index]));
+    renderBoard?.(board, ready && playing && !pending && !finished && board.turn === seat);
   }
   function addChat(message, live = false) {
     const li = document.createElement('li');
@@ -251,9 +295,14 @@ function enterRoom(code) {
       switch (msg.t) {
         case 'welcome':
           ({ phase, seat, hostSeat, round, seq, players } = msg);
-          board = makeBoard(msg.options.size);
-          for (const move of msg.log) board = playLine(board, move.seat, move.data);
-          drawBoard(board.size);
+          game = msg.game;
+          $('game-title').textContent = games[game].title;
+          $('game-subtitle').textContent = games[game].subtitle;
+          $('game-subtitle').hidden = false;
+          $('rules').textContent = games[game].rules;
+          document.title = `${games[game].title} · GameRooms`;
+          resetBoard(msg.options);
+          for (const move of msg.log) board = games[game].move(board, move.seat, move.data);
           $('messages').replaceChildren();
           msg.chat.forEach(message => addChat(message));
           ready = true;
@@ -272,14 +321,13 @@ function enterRoom(code) {
           ({ round, players } = msg);
           seq = 0;
           pending = false;
-          board = makeBoard(msg.options.size);
-          drawBoard(board.size);
+          resetBoard(msg.options);
           break;
         case 'move':
           if (msg.round !== round || msg.seq !== seq + 1) return ws.close(1012);
           seq = msg.seq;
           pending = false;
-          board = playLine(board, msg.seat, msg.data);
+          board = games[game].move(board, msg.seat, msg.data);
           break;
         case 'chat':
           addChat(msg, true);
