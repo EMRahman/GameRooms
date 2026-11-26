@@ -5,7 +5,12 @@ import { MEMORY_LEVELS, validFlip } from '../public/memory-rules.js';
 import { ROUND_CHOICES } from '../public/landlord-rules.js';
 import { ROUND_CHOICES as CONQUEST_ROUNDS } from '../public/conquest-rules.js';
 
+import { authoritative } from './authoritative.js';
+
 export const defaultGame = 'dots_and_boxes';
+// Lifetime moves and chat messages per room. Server-run games overwrite one stored state
+// instead of adding a row per move, so they get a larger allowance.
+export const messageLimit = game => authoritative[game] ? 4000 : 2000;
 export const maxSeats = game => ({ memory_match: 5, iron_routes: 5, landlord: 6, conquest: 6 })[game] ?? 2;
 export const clientIdValid = id => typeof id === 'string' && /^[a-f0-9-]{36}$/i.test(id);
 

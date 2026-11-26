@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  SP, PROPS, makeLandlord, applyLandlord, landlordView, actor, buildReason, owned,
+  SP, PROPS, makeLandlord, applyLandlord, landlordView, actor, buildReason, owned, endLandlord, netWorth,
 } from '../public/landlord-rules.js';
-import { roomOptions } from '../worker/protocol.js';
+import { roomOptions, messageLimit } from '../worker/protocol.js';
 
 const seatOf = (state, pid) => state.seats[pid];
 
@@ -55,6 +55,34 @@ test('random games finish without breaking the bank or the decks', () => {
     }
     assert.ok(state.over, `game did not finish: ${state.phase} round ${state.round}`);
   }
+});
+
+test('the longest games fit the room allowance', () => {
+  let longest = 0;
+  for (let game = 0; game < 20; game++) {
+    const state = makeLandlord([0, 1, 2, 3, 4, 5], { rounds: 40 });
+    let moves = 0;
+    while (!state.over && moves < 20000) {
+      assert.ok(autoplay(state, moves));
+      moves++;
+    }
+    longest = Math.max(longest, moves);
+  }
+  assert.ok(longest < messageLimit('landlord') - 600, `a six-player, 40-round game took ${longest} moves`);
+});
+
+test('the room can end a game mid-auction, and the richest player wins', () => {
+  const state = makeLandlord([0, 1, 2]);
+  state.phase = 'buy';
+  state.offer = 1;
+  assert.ok(applyLandlord(state, 0, { action: 'auction' }));
+  state.players[2].cash = 3000;
+  endLandlord(state);
+  assert.deepEqual(state.over, { winner: 2, reason: 'limit' });
+  assert.equal(state.auction, null);
+  assert.equal(landlordView(state, 0).winner, 2);
+  assert.equal(applyLandlord(state, 0, { action: 'pass' }), false);
+  assert.ok(netWorth(state, 2) > netWorth(state, 0));
 });
 
 test('only the acting player can move, and malformed moves are refused', () => {

@@ -246,6 +246,14 @@ function endTurn(state) {
   }
 }
 
+// Scores the game as it stands. The room calls this at its move limit.
+export function endIronRoutes(state) {
+  if (state.over) return;
+  log(state, null, 'The room reached its move limit, so the game is scored now.');
+  state.setup = false;
+  gameOver(state);
+}
+
 function gameOver(state) {
   const rows = state.players.map(player => {
     const tickets = player.tickets.map(id => ({ id, done: connected(state.owner, player.seat, TICKETS[id].a, TICKETS[id].b) }));

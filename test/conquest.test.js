@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  NT, TERRS, START_ARMIES, makeConquest, applyConquest, conquestView, bestSet, canAttackFrom, countOwned, reachable,
+  NT, TERRS, START_ARMIES, makeConquest, applyConquest, conquestView, bestSet, canAttackFrom, countOwned, reachable, endConquest, standings,
 } from '../public/conquest-rules.js';
-import { roomOptions, maxSeats } from '../worker/protocol.js';
+import { roomOptions, maxSeats, messageLimit } from '../worker/protocol.js';
 
 const seatOf = (S, pid) => S.seats[pid];
 const pick = list => list[Math.floor(Math.random() * list.length)];
@@ -66,6 +66,55 @@ test('random games finish within the round limit and keep every card', () => {
     assert.ok(S.over, `game did not finish: ${S.phase} round ${S.round}`);
     assert.ok(S.round <= S.rounds + 1);
   }
+});
+
+// The slowest plausible play: single rolls only, attacking from any territory that can.
+function rollOnly(S) {
+  if (S.phase === 'setup') return autoplay(S);
+  const pid = S.cur;
+  const play = move => applyConquest(S, seatOf(S, pid), move);
+  if (S.phase === 'reinforce') {
+    const set = bestSet(S.owner, pid, S.players[pid].cards);
+    if (set) return play({ action: 'trade', cards: set });
+    return play({ action: 'reinforce', place: S.reinforce ? dump(S, pid, S.reinforce) : {} });
+  }
+  if (S.phase === 'attack') {
+    if (S.pending) return play({ action: 'move', n: S.pending.min });
+    const from = TERRS.map(t => t.i).filter(t => canAttackFrom(S, pid, t));
+    if (!from.length) return play({ action: 'endAttack' });
+    const f = pick(from);
+    return play({ action: 'attack', from: f, to: pick(TERRS[f].adj.filter(o => S.owner[o] !== pid)), dice: 3, blitz: false });
+  }
+  return play({ action: 'endTurn' });
+}
+
+test('the longest games fit the room allowance with room to spare for chat', () => {
+  // 200 such games measured a median of ~2,100 moves and a maximum of ~2,900.
+  const budget = messageLimit('conquest') - 600;
+  for (let game = 0; game < 25; game++) {
+    const S = makeConquest([0, 1, 2, 3, 4, 5], { rounds: 30 });
+    let moves = 0;
+    while (!S.over && moves <= budget) {
+      assert.ok(rollOnly(S));
+      moves++;
+    }
+    assert.ok(S.over, `a six-player, 30-round game needed more than ${budget} moves`);
+  }
+});
+
+test('the room can end a game at its move limit, scored as if time ran out', () => {
+  const S = makeConquest([0, 1, 2]);
+  for (let moves = 0; moves < 400 && !S.pending; moves++) rollOnly(S);
+  assert.ok(S.pending, 'no conquest happened to leave armies waiting to move in');
+  endConquest(S);
+  assert.equal(S.over.reason, 'limit');
+  assert.equal(S.over.winner, standings(S)[0]);
+  assert.equal(S.pending, null);
+  assert.ok(S.armies.every(a => a >= 1));
+  assert.equal(applyConquest(S, 0, { action: 'endTurn' }), false);
+  const before = JSON.stringify(S);
+  endConquest(S);
+  assert.equal(JSON.stringify(S), before);
 });
 
 test('setup deals every territory and holds deployments until everyone places', () => {

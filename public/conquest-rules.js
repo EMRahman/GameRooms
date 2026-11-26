@@ -84,7 +84,8 @@ TERRS.forEach(t => t.cells.forEach(([c, r]) => {
 SEA_LANES.forEach(([a, b]) => link(a, b));
 
 export const START_ARMIES = { 2: 46, 3: 40, 4: 34, 5: 29, 6: 25 };
-// Games are timed because an untimed game can exceed the room's 2,000-message limit.
+// Games are timed because an untimed game can exceed the room's message limit. Six players
+// rolling single dice for 30 rounds measured up to ~2,900 moves against the 4,000 allowance.
 export const ROUND_CHOICES = [10, 20, 30];
 export const SYMBOLS = [
   { glyph: '▲', name: 'Shield' },
@@ -355,9 +356,19 @@ function finish(S, reason) {
   S.over = { winner, reason };
   S.phase = 'over';
   S.pending = null;
-  log(S, reason === 'world'
-    ? `@${winner} conquers the world in ${S.turn} turns.`
-    : `Time is up after ${S.rounds} rounds. @${winner} holds the most territory.`, winner);
+  const text = {
+    world: `@${winner} conquers the world in ${S.turn} turns.`,
+    time: `Time is up after ${S.rounds} rounds. @${winner} holds the most territory.`,
+    limit: `The room reached its move limit. @${winner} holds the most territory.`,
+  }[reason];
+  log(S, text, winner);
+}
+
+// Ends the game now, scored as if time ran out. The room calls this at its move limit.
+export function endConquest(S) {
+  if (S.over) return;
+  if (S.pending) occupy(S, S.pending.min);
+  finish(S, 'limit');
 }
 
 function act(S, pid, move) {

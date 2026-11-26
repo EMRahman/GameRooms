@@ -422,6 +422,52 @@ test('Conquest runs on the server and keeps hands and deployments private', asyn
   assert.equal(players[1].messages.at(-1).code, 'bad_request');
 });
 
+test('a server-run game still in progress is scored when the room reaches its limit', async () => {
+  const context = roomContext();
+  const sockets = [];
+  context.getWebSockets = () => sockets;
+  const room = new GameRoom(context, {});
+  const ids = [crypto.randomUUID(), crypto.randomUUID()];
+  await room.initialize(ids[0], 'conquest', {});
+  const send = (ws, t, fields) => room.webSocketMessage(ws, JSON.stringify({ t, v: 1, ...fields }));
+  const players = ids.map(() => socket(sockets));
+  for (const [seat, ws] of players.entries()) await send(ws, 'hello', { clientId: ids[seat] });
+  await send(players[0], 'start');
+  const setCount = count => { const r = room.room; r.count = count; room.room = r; };
+
+  // A chat message that uses the last of the allowance ends the game too.
+  setCount(3999);
+  await send(players[1], 'chat', { text: 'last word' });
+  const scored = players[0].messages.at(-1);
+  assert.equal(scored.t, 'state');
+  assert.equal(scored.seq, 1);
+  assert.equal(scored.view.over.reason, 'limit');
+  assert.ok(scored.view.winner === 0 || scored.view.winner === 1);
+  await send(players[0], 'chat', { text: 'one more' });
+  assert.equal(players[0].messages.at(-1).code, 'room_limit');
+  await send(players[0], 'rematch');
+  assert.equal(players[0].messages.at(-1).code, 'room_limit');
+
+  // A move that reaches the limit is applied, then the game is scored.
+  await send(players[0], 'end');
+  setCount(0);
+  await send(players[0], 'start');
+  setCount(3999);
+  const view = players[1].messages.at(-1).view;
+  await send(players[1], 'move', { round: 2, seq: 1, data: { action: 'deploy', place: { [view.owner.indexOf(1)]: view.pool } } });
+  const after = players[0].messages.at(-1);
+  assert.equal(after.view.players[1].ready, false, 'setup ended, so nobody is waiting to deploy');
+  assert.equal(after.view.over.reason, 'limit');
+});
+
+test('relay games keep the 2,000-message allowance', async () => {
+  const { messageLimit } = await import('../worker/protocol.js');
+  assert.equal(messageLimit('dots_and_boxes'), 2000);
+  assert.equal(messageLimit('go'), 2000);
+  assert.equal(messageLimit('conquest'), 4000);
+  assert.equal(messageLimit('northstar'), 4000);
+});
+
 test('End game and leave return the room to the lobby without replaying old moves', async () => {
   const context = roomContext();
   const sockets = [];

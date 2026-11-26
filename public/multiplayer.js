@@ -597,7 +597,7 @@ function enterRoom(code) {
         case 'error':
           pending = false;
           if (msg.code === 'seq_mismatch') return ws.close(1012);
-          notice({ rate_limited: 'Wait a second before sending another message.', room_limit: 'This room has reached its message limit.' }[msg.code] ?? 'That action is unavailable.');
+          notice({ rate_limited: 'Wait a second before sending another message.', room_limit: 'This room has reached its message limit. Create a new room to keep playing.' }[msg.code] ?? 'That action is unavailable.');
           break;
       }
       if (msg.t !== 'pong') render();

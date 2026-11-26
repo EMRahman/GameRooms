@@ -458,7 +458,7 @@ export function drawConquest(container, seat, submit, nameOf) {
       const order = view.players.map((_, k) => k).sort((a, b) =>
         (view.players[b].alive - view.players[a].alive) || view.players[b].terr - view.players[a].terr || view.players[b].armies - view.players[a].armies || a - b);
       return `<section class="cq-box"><h3>${esc(pidName(view, view.over.winner))} ${view.seats[view.over.winner] === seat ? 'win' : 'wins'}!</h3>
-        <p>${view.over.reason === 'world' ? `Every territory fell in ${view.turnNo} turns.` : `Time’s up after ${view.rounds} rounds. Most territory wins, then most armies.`}</p>
+        <p>${{ world: `Every territory fell in ${view.turnNo} turns.`, time: `Time’s up after ${view.rounds} rounds. Most territory wins, then most armies.`, limit: 'The room reached its move limit. Most territory wins, then most armies.' }[view.over.reason]}</p>
         <ol class="cq-standings">${order.map(k => `<li><i style="background:${colorOf(view, k).main}"></i><b>${esc(pidName(view, k))}</b><span>${view.players[k].alive ? `${view.players[k].terr} territories · ${armies(view.players[k].armies)}` : 'Eliminated'}</span></li>`).join('')}</ol></section>`;
     }
     if (view.phase === 'setup') {

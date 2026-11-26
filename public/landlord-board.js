@@ -127,7 +127,7 @@ export function drawLandlord(container, seat, submit, nameOf) {
     if (view.over) {
       const ranks = range(view.players.length).sort((a, b) => (view.players[a].out - view.players[b].out) || view.players[b].worth - view.players[a].worth);
       return `<section class="ll-box"><h3>${esc(pidName(view, view.over.winner))} ${view.seats[view.over.winner] === seat ? 'win' : 'wins'}!</h3>
-        <p>${view.over.reason === 'time' ? `Time’s up after ${view.rounds} rounds. Final net worth:` : 'Every rival has gone bankrupt.'}</p>
+        <p>${{ time: `Time’s up after ${view.rounds} rounds. Final net worth:`, limit: 'The room reached its move limit. Final net worth:' }[view.over.reason] ?? 'Every rival has gone bankrupt.'}</p>
         <ol class="ll-standings">${ranks.map(k => `<li>${token(view, k)}<b>${esc(pidName(view, k))}</b><span>${view.players[k].out ? 'Bankrupt' : money(view.players[k].worth)}</span></li>`).join('')}</ol></section>`;
     }
     if (view.trade) return offerHTML(view, my, active);

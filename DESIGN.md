@@ -158,7 +158,8 @@ concurrent moves can never interleave. It checks only that:
 - raw UTF-8 byte length is within the 4 KB limit (checked before `JSON.parse`),
 - the sender holds a seat and `phase === "playing"`,
 - `round === currentRound` and `seq === expectedSeq`,
-- the room has not reached its lifetime message cap (2,000 stored messages).
+- the room has not reached its lifetime message cap (2,000 messages for relay games,
+  4,000 for server-run games; see section 10).
 
 The room deliberately does **not** enforce round-robin turn order in Relay mode:
 extra-turn games (`dots_and_boxes`, `memory_match`), out-of-turn actions (`resign`,
@@ -321,9 +322,19 @@ is stored for replay.
   deployment's optional `OWNER_KEY` secret. Every room created by the owner still
   counts toward the daily total. Without a configured key, all requests follow
   the public limits. Owners can set the key in the Cloudflare dashboard after deployment.
-- **Per-room lifetime limit.** Each room stores up to 2,000 moves and chat messages
-  combined (4 KB each) across all rounds. The ten-room estimates above cover ordinary
-  play. Additional rooms created with the owner key use the same account allowance.
+- **Per-room lifetime limit.** Each room accepts up to 2,000 moves and chat messages
+  combined (4 KB each) across all rounds. Server-run games (`northstar`, `iron_routes`,
+  `landlord`, `conquest`) get 4,000, because each of their moves overwrites the one
+  stored game state instead of adding a row, so the room's storage does not grow and
+  expiry deletes almost nothing. Each of those moves is still one row write, so the
+  worst case is 10 full rooms × 4,000 = 40,000 of the 100,000 daily writes. The
+  ten-room estimates above cover ordinary play. Additional rooms created with the
+  owner key use the same account allowance.
+- **Games finish at the limit.** When a move or chat message uses the last of a room's
+  allowance while a server-run game is in progress, the room scores that game as it
+  stands (`end(state)` in the registry): most territory in Conquest, richest player in
+  Landlord, final scoring in Iron Routes. Northstar cannot come near the limit. A room
+  at its limit refuses further moves, chat, starts and rematches.
 - **Usage**: `GET /api/stats` returns `{dailyLimit, roomsToday, remaining, resetsAt}`
   and is edge-cached in the Worker (`caches.default`, 60 s TTL) so it never funnels
   page views into `Budget`; the landing page does not poll `/api/stats` on load and
@@ -395,7 +406,7 @@ validates them against its own state. Simultaneous moves, such as every
 Iron Routes player choosing starting tickets at once, all succeed in arrival order.
 Rematch requires `finished(state)`. Northstar, Iron Routes, Landlord and Conquest use this path.
 Landlord runs on the server so dice and card draws cannot be forged; every game is
-timed (15, 25 or 40 rounds) because an untimed game can exceed the 2,000-message room limit.
+timed (15, 25 or 40 rounds) because an untimed game can exceed the room's message limit.
 Conquest runs on the server so dice, card draws and hands stay honest. Territories are
 dealt at random and every seat places its starting armies at once; placements stay
 hidden until all seats have deployed. Each reinforcement is sent as one batch and a
@@ -482,7 +493,7 @@ way to check that both phones agree on the score and whose turn comes next.
   moderation), `vacate` a disconnected player's seat mid-game for takeover, and any
   seated player can `claim_host` if the host is disconnected.
 - Each deployment caps public room creation at 10 new rooms per UTC day. Only a valid
-  owner key can exceed the ceiling. Each room has a 2,000-message lifetime limit (section 10).
+  owner key can exceed the ceiling. Each room has a 2,000-message lifetime limit, or 4,000 for server-run games (section 10).
 
 **Open (post-v1):**
 1. Switching games inside the same room without re-scanning (the room-level URL

@@ -63,7 +63,7 @@ export const BAIL = 60;
 export const START_CASH = 1600;
 export const STATION_RENT = [0, 30, 60, 110, 180];
 export const UTIL_MULT = [0, 5, 12];
-// Every game is timed: an untimed game can outlast a room's 2,000-message limit.
+// Every game is timed: an untimed game can outlast a room's message limit.
 export const ROUND_CHOICES = [15, 25, 40];
 export const isProp = i => ['st', 'rr', 'ut'].includes(SP[i]?.t);
 export const PROPS = SP.map((_, i) => i).filter(isProp);
@@ -514,6 +514,18 @@ function buy(S) {
   S.phase = 'post';
   log(S, `@${S.cur} buys ${SP[i].n} for ${money(SP[i].p)}.`, S.cur);
   return true;
+}
+
+// Ends the game now with the richest player winning. The room calls this at its move limit.
+export function endLandlord(S) {
+  if (S.over) return;
+  S.auction = null;
+  S.trade = null;
+  S.debt = null;
+  const ranks = alive(S).sort((a, b) => netWorth(S, b) - netWorth(S, a));
+  S.over = { winner: ranks[0], reason: 'limit' };
+  S.phase = 'over';
+  log(S, `The room reached its move limit. @${ranks[0]} is the richest with ${money(netWorth(S, ranks[0]))}.`, ranks[0]);
 }
 
 function endTurn(S) {
