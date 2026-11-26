@@ -3,62 +3,283 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#142931">
+  <meta name="theme-color" content="#070712">
+  <meta name="description" content="Play online multiplayer games with a friend. Create a room and send the invite link or QR code.">
   <title>GameRooms</title>
+  <link rel="stylesheet" href="./cards.css">
   <link rel="stylesheet" href="./style.css">
   <script defer src="./vendor/qr.js"></script>
   <script type="module" src="./multiplayer.js"></script>
 </head>
 <body>
 <main>
-  <header class="masthead"><a href="./">GameRooms</a><span id="player-capacity">Online multiplayer</span></header>
+  <header class="masthead"><a href="./" class="brand">GameRooms</a><span id="player-capacity">Online multiplayer</span></header>
   <section class="intro">
+    <p class="eyebrow" id="eyebrow">Online multiplayer · no accounts</p>
     <h1 id="game-title">Choose a game</h1>
     <p id="game-subtitle" hidden></p>
   </section>
   <p id="notice" role="status" hidden></p>
-  <section id="lobby" class="entry">
-    <label for="name">Display name <small>(optional)</small></label>
-    <input id="name" maxlength="20" autocomplete="nickname" placeholder="Player name">
+  <section id="lobby" class="lobby">
+    <div class="name-row">
+      <label for="name">Display name <small>(optional)</small></label>
+      <input id="name" maxlength="20" autocomplete="nickname" placeholder="Player name">
+    </div>
     <div id="entry-actions">
-      <form id="create">
-        <label for="game">Game</label>
-        <select id="game"><option value="dots_and_boxes">Dots and Boxes</option><option value="fourfold">Fourfold</option><option value="go">Go</option><option value="memory_match">Memory Match</option><option value="northstar">Northstar</option><option value="iron_routes">Iron Routes</option></select>
-        <div id="size-field"><label for="size">Board size</label>
-        <select id="size"><option value="4">4 × 4 boxes</option><option value="5">5 × 5 boxes</option><option value="6">6 × 6 boxes</option></select></div>
-        <div id="level-field" hidden>
-          <label for="level">Table size</label>
-          <select id="level"></select>
+      <div class="game-grid" role="radiogroup" aria-label="Choose a game">
+          <div class="game-card" role="radio" tabindex="0" aria-checked="false" data-game="dots_and_boxes">
+  <div class="game-art art-dots" aria-hidden="true">
+                <span class="art-label">Pencil &amp; Paper</span>
+                <svg class="card-svg" viewBox="0 0 300 150" focusable="false">
+                  <g transform="rotate(-3 150 75)">
+                    <rect x="87" y="24" width="128" height="104" rx="4" fill="#d9cdb0"/>
+                    <rect x="84" y="21" width="128" height="104" rx="4" fill="#f4efdf"/>
+                    <g fill="#f7b2a8" fill-opacity=".8"><rect x="100" y="37" width="24" height="24"/><rect x="124" y="37" width="24" height="24"/></g><g fill="#9ed6dc" fill-opacity=".85"><rect x="100" y="61" width="24" height="24"/><rect x="100" y="85" width="24" height="24"/></g>
+                    <rect class="bx-target" x="148" y="61" width="24" height="24" fill="#f7b2a8" fill-opacity=".14"/>
+                    <g fill="none" stroke-width="3.4" stroke-linecap="round"><path d="M100 37H124" stroke="#ec5f50"/><path d="M124 37H148" stroke="#168aa0"/><path d="M100 37V61" stroke="#ec5f50"/><path d="M124 37V61" stroke="#ec5f50"/><path d="M148 37V61" stroke="#168aa0"/><path d="M100 61H124" stroke="#ec5f50"/><path d="M124 61H148" stroke="#ec5f50"/><path d="M100 61V85" stroke="#168aa0"/><path d="M124 61V85" stroke="#168aa0"/><path d="M100 85H124" stroke="#168aa0"/><path d="M100 85V109" stroke="#ec5f50"/><path d="M124 85V109" stroke="#168aa0"/><path d="M100 109H124" stroke="#168aa0"/><path d="M148 61H172" stroke="#ec5f50"/><path d="M148 85H172" stroke="#168aa0"/><path d="M172 61V85" stroke="#ec5f50"/><path d="M172 37H196" stroke="#168aa0"/><path d="M196 61V85" stroke="#ec5f50"/><path d="M148 109H172" stroke="#ec5f50"/><path d="M196 85V109" stroke="#168aa0"/></g>
+                    <path class="bx-preview" d="M148 85V61" stroke="#ec5f50" stroke-opacity=".85" stroke-width="3" stroke-dasharray="3 3" fill="none"/>
+                    <path class="bx-draw" d="M148 85V61" pathLength="100" stroke="#ec5f50" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+                    <g fill="#172f35"><circle cx="100" cy="37" r="3"/><circle cx="100" cy="61" r="3"/><circle cx="100" cy="85" r="3"/><circle cx="100" cy="109" r="3"/><circle cx="124" cy="37" r="3"/><circle cx="124" cy="61" r="3"/><circle cx="124" cy="85" r="3"/><circle cx="124" cy="109" r="3"/><circle cx="148" cy="37" r="3"/><circle cx="148" cy="61" r="3"/><circle cx="148" cy="85" r="3"/><circle cx="148" cy="109" r="3"/><circle cx="172" cy="37" r="3"/><circle cx="172" cy="61" r="3"/><circle cx="172" cy="85" r="3"/><circle cx="172" cy="109" r="3"/><circle cx="196" cy="37" r="3"/><circle cx="196" cy="61" r="3"/><circle cx="196" cy="85" r="3"/><circle cx="196" cy="109" r="3"/></g>
+                    <g class="bx-pencil"><g transform="translate(149 86) rotate(40)">
+                        <path d="M0 0L14 -4.5L14 4.5Z" fill="#f1d6a8"/><path d="M0 0L4.5 -1.45L4.5 1.45Z" fill="#2a2a2a"/>
+                        <rect x="14" y="-4.5" width="52" height="9" fill="#f0bd4b"/><rect x="14" y="-4.5" width="52" height="3" fill="#f7d684"/><rect x="14" y="1.5" width="52" height="3" fill="#d39a33"/>
+                        <rect x="66" y="-4.7" width="7" height="9.4" fill="#c9cbc7"/><path d="M68.3 -4.7v9.4M70.6 -4.7v9.4" stroke="#9a9d99" stroke-width=".7"/>
+                        <rect x="72" y="-4.5" width="9" height="9" rx="2.2" fill="#ef8a7e"/>
+                      </g></g>
+                  </g>
+                </svg>
+              </div>
+            <div class="game-copy">
+              <div><h3>Boxed In</h3><p>Join the dots, close the squares, and turn every clever line into another move.</p></div>
+              <span class="play-arrow" aria-hidden="true">↗</span>
+              <div class="game-meta"><span>2 players</span><span>Strategy</span><span>Touch ready</span></div>
+            </div>
+          </div>
+          <div class="game-card" role="radio" tabindex="0" aria-checked="false" data-game="fourfold">
+  <div class="game-art art-connect" aria-hidden="true">
+                <span class="art-label">Classic</span>
+                <svg class="card-svg" viewBox="0 0 300 150" focusable="false">
+                  <defs>
+                    <linearGradient id="ff-board" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d68f2"/><stop offset="1" stop-color="#5640cf"/></linearGradient>
+                    <radialGradient id="ff-red" cx=".38" cy=".32" r=".7"><stop offset="0" stop-color="#ffa3a7"/><stop offset=".55" stop-color="#ff5d65"/><stop offset="1" stop-color="#cf3649"/></radialGradient>
+                    <radialGradient id="ff-yel" cx=".38" cy=".32" r=".7"><stop offset="0" stop-color="#fff0b8"/><stop offset=".55" stop-color="#ffd24d"/><stop offset="1" stop-color="#d99d24"/></radialGradient>
+                  </defs>
+                  <ellipse cx="46" cy="133" rx="20" ry="4" fill="#000" fill-opacity=".3"/><ellipse cx="254" cy="133" rx="20" ry="4" fill="#000" fill-opacity=".3"/>
+                  <ellipse cx="46" cy="130.6" rx="15" ry="4.8" fill="#a32a3a"/><ellipse cx="46" cy="128.0" rx="15" ry="4.8" fill="#ff5d65"/><ellipse cx="46" cy="125.39999999999999" rx="15" ry="4.8" fill="#a32a3a"/><ellipse cx="46" cy="122.8" rx="15" ry="4.8" fill="#ff5d65"/><ellipse cx="46" cy="120.19999999999999" rx="15" ry="4.8" fill="#a32a3a"/><ellipse cx="46" cy="117.6" rx="15" ry="4.8" fill="#ff5d65"/><ellipse cx="46" cy="115.0" rx="15" ry="4.8" fill="#a32a3a"/><ellipse cx="46" cy="112.4" rx="15" ry="4.8" fill="#ff5d65"/><ellipse cx="46" cy="109.8" rx="15" ry="4.8" fill="#a32a3a"/><ellipse cx="46" cy="107.2" rx="15" ry="4.8" fill="#ff5d65"/><ellipse cx="46" cy="107.2" rx="9.5" ry="2.9" fill="none" stroke="#cf3649" stroke-width="1.1"/><ellipse cx="254" cy="130.6" rx="15" ry="4.8" fill="#b07f1c"/><ellipse cx="254" cy="128.0" rx="15" ry="4.8" fill="#ffd24d"/><ellipse cx="254" cy="125.39999999999999" rx="15" ry="4.8" fill="#b07f1c"/><ellipse cx="254" cy="122.8" rx="15" ry="4.8" fill="#ffd24d"/><ellipse cx="254" cy="120.19999999999999" rx="15" ry="4.8" fill="#b07f1c"/><ellipse cx="254" cy="117.6" rx="15" ry="4.8" fill="#ffd24d"/><ellipse cx="254" cy="115.0" rx="15" ry="4.8" fill="#b07f1c"/><ellipse cx="254" cy="112.4" rx="15" ry="4.8" fill="#ffd24d"/><ellipse cx="254" cy="112.4" rx="9.5" ry="2.9" fill="none" stroke="#d99d24" stroke-width="1.1"/>
+                  <ellipse cx="150" cy="146" rx="72" ry="3.5" fill="#000" fill-opacity=".35"/>
+                  <rect x="84.5" y="30" width="131" height="114" rx="9" fill="url(#ff-board)"/>
+                  <rect x="85.5" y="31" width="129" height="112" rx="8" fill="none" stroke="#fff" stroke-opacity=".2"/>
+                  <rect x="158.5" y="34" width="17" height="106" rx="8.5" fill="#fff" fill-opacity=".08"/>
+                  <g fill="#1b1540" stroke="#0b0820" stroke-opacity=".6" stroke-width="1"><circle cx="99" cy="44.5" r="6.6"/><circle cx="99" cy="61.5" r="6.6"/><circle cx="99" cy="78.5" r="6.6"/><circle cx="99" cy="95.5" r="6.6"/><circle cx="99" cy="112.5" r="6.6"/><circle cx="99" cy="129.5" r="6.6"/><circle cx="116" cy="44.5" r="6.6"/><circle cx="116" cy="61.5" r="6.6"/><circle cx="116" cy="78.5" r="6.6"/><circle cx="116" cy="95.5" r="6.6"/><circle cx="116" cy="112.5" r="6.6"/><circle cx="116" cy="129.5" r="6.6"/><circle cx="133" cy="44.5" r="6.6"/><circle cx="133" cy="61.5" r="6.6"/><circle cx="133" cy="78.5" r="6.6"/><circle cx="133" cy="95.5" r="6.6"/><circle cx="133" cy="112.5" r="6.6"/><circle cx="133" cy="129.5" r="6.6"/><circle cx="150" cy="44.5" r="6.6"/><circle cx="150" cy="61.5" r="6.6"/><circle cx="150" cy="78.5" r="6.6"/><circle cx="150" cy="95.5" r="6.6"/><circle cx="150" cy="112.5" r="6.6"/><circle cx="150" cy="129.5" r="6.6"/><circle cx="167" cy="44.5" r="6.6"/><circle cx="167" cy="61.5" r="6.6"/><circle cx="167" cy="78.5" r="6.6"/><circle cx="167" cy="95.5" r="6.6"/><circle cx="167" cy="112.5" r="6.6"/><circle cx="167" cy="129.5" r="6.6"/><circle cx="184" cy="44.5" r="6.6"/><circle cx="184" cy="61.5" r="6.6"/><circle cx="184" cy="78.5" r="6.6"/><circle cx="184" cy="95.5" r="6.6"/><circle cx="184" cy="112.5" r="6.6"/><circle cx="184" cy="129.5" r="6.6"/><circle cx="201" cy="44.5" r="6.6"/><circle cx="201" cy="61.5" r="6.6"/><circle cx="201" cy="78.5" r="6.6"/><circle cx="201" cy="95.5" r="6.6"/><circle cx="201" cy="112.5" r="6.6"/><circle cx="201" cy="129.5" r="6.6"/></g>
+                  <circle cx="116" cy="129.5" r="7.1" fill="url(#ff-red)"/><circle cx="116" cy="129.5" r="4.6" fill="none" stroke="#cf3649" stroke-opacity=".75" stroke-width="1.1"/><circle cx="133" cy="112.5" r="7.1" fill="url(#ff-red)"/><circle cx="133" cy="112.5" r="4.6" fill="none" stroke="#cf3649" stroke-opacity=".75" stroke-width="1.1"/><circle cx="150" cy="129.5" r="7.1" fill="url(#ff-red)"/><circle cx="150" cy="129.5" r="4.6" fill="none" stroke="#cf3649" stroke-opacity=".75" stroke-width="1.1"/><circle cx="150" cy="95.5" r="7.1" fill="url(#ff-red)"/><circle cx="150" cy="95.5" r="4.6" fill="none" stroke="#cf3649" stroke-opacity=".75" stroke-width="1.1"/><circle cx="167" cy="112.5" r="7.1" fill="url(#ff-red)"/><circle cx="167" cy="112.5" r="4.6" fill="none" stroke="#cf3649" stroke-opacity=".75" stroke-width="1.1"/><circle cx="184" cy="112.5" r="7.1" fill="url(#ff-red)"/><circle cx="184" cy="112.5" r="4.6" fill="none" stroke="#cf3649" stroke-opacity=".75" stroke-width="1.1"/><circle cx="99" cy="129.5" r="7.1" fill="url(#ff-yel)"/><circle cx="99" cy="129.5" r="4.6" fill="none" stroke="#d99d24" stroke-opacity=".75" stroke-width="1.1"/><circle cx="133" cy="129.5" r="7.1" fill="url(#ff-yel)"/><circle cx="133" cy="129.5" r="4.6" fill="none" stroke="#d99d24" stroke-opacity=".75" stroke-width="1.1"/><circle cx="150" cy="112.5" r="7.1" fill="url(#ff-yel)"/><circle cx="150" cy="112.5" r="4.6" fill="none" stroke="#d99d24" stroke-opacity=".75" stroke-width="1.1"/><circle cx="167" cy="129.5" r="7.1" fill="url(#ff-yel)"/><circle cx="167" cy="129.5" r="4.6" fill="none" stroke="#d99d24" stroke-opacity=".75" stroke-width="1.1"/><circle cx="167" cy="95.5" r="7.1" fill="url(#ff-yel)"/><circle cx="167" cy="95.5" r="4.6" fill="none" stroke="#d99d24" stroke-opacity=".75" stroke-width="1.1"/><circle cx="184" cy="129.5" r="7.1" fill="url(#ff-yel)"/><circle cx="184" cy="129.5" r="4.6" fill="none" stroke="#d99d24" stroke-opacity=".75" stroke-width="1.1"/>
+                  <g fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.2"><circle cx="116" cy="129.5" r="8.7"/><circle cx="133" cy="112.5" r="8.7"/><circle cx="150" cy="95.5" r="8.7"/></g>
+                  <circle cx="167" cy="78.5" r="7.1" fill="none" stroke="#ff5d65" stroke-width="1.3" stroke-dasharray="2.2 2"/>
+                  <path class="ff-win" d="M116 129.5L167 78.5" pathLength="100" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+                  <path d="M161 2v6M167 0v5M173 2v6" stroke="#fff" stroke-opacity=".35" stroke-width="1.2" stroke-linecap="round"/>
+                  <g class="ff-drop"><circle cx="167" cy="16" r="7.1" fill="url(#ff-red)"/><circle cx="167" cy="16" r="4.6" fill="none" stroke="#cf3649" stroke-opacity=".75" stroke-width="1.1"/></g>
+                </svg>
+              </div>
+            <div class="game-copy">
+              <div><h3>Fourfold</h3><p>Drop a disc, block a line, and line up four before your rival does.</p></div>
+              <span class="play-arrow" aria-hidden="true">↗</span>
+              <div class="game-meta"><span>2 players</span><span>Strategy</span><span>Touch ready</span></div>
+            </div>
+          </div>
+          <div class="game-card" role="radio" tabindex="0" aria-checked="false" data-game="go">
+  <div class="game-art art-go" aria-hidden="true">
+                <span class="art-label">Board</span>
+                <svg class="card-svg" viewBox="0 0 300 150" focusable="false">
+                  <defs>
+                    <linearGradient id="kd-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f1cd86"/><stop offset=".55" stop-color="#dcab5f"/><stop offset="1" stop-color="#c58f47"/></linearGradient>
+                    <radialGradient id="kd-b" cx=".36" cy=".3" r=".75"><stop offset="0" stop-color="#707070"/><stop offset=".45" stop-color="#222"/><stop offset="1" stop-color="#050505"/></radialGradient>
+                    <radialGradient id="kd-w" cx=".36" cy=".3" r=".75"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#efece4"/><stop offset="1" stop-color="#b9b4a8"/></radialGradient>
+                    <radialGradient id="kd-bowl" cx=".4" cy=".2" r=".9"><stop offset="0" stop-color="#a5703a"/><stop offset=".6" stop-color="#6b4220"/><stop offset="1" stop-color="#3a220e"/></radialGradient>
+                    <clipPath id="kd-clip-l"><ellipse cx="42" cy="100" rx="27" ry="7.3"/></clipPath>
+                    <clipPath id="kd-clip-r"><ellipse cx="258" cy="100" rx="27" ry="7.3"/></clipPath>
+                  </defs>
+                  <ellipse cx="42" cy="134" rx="25" ry="4" fill="#000" fill-opacity=".35"/><path d="M14 100Q14 132 42 132Q70 132 70 100Z" fill="url(#kd-bowl)"/><ellipse cx="42" cy="100" rx="28" ry="8" fill="#2b1a0b"/><g clip-path="url(#kd-clip-l)"><ellipse cx="30" cy="102" rx="6.2" ry="3.6" fill="url(#kd-b)"/><ellipse cx="39" cy="99" rx="6.2" ry="3.6" fill="url(#kd-b)"/><ellipse cx="49" cy="101" rx="6.2" ry="3.6" fill="url(#kd-b)"/><ellipse cx="56" cy="103" rx="6.2" ry="3.6" fill="url(#kd-b)"/><ellipse cx="44" cy="104" rx="6.2" ry="3.6" fill="url(#kd-b)"/><ellipse cx="34" cy="105" rx="6.2" ry="3.6" fill="url(#kd-b)"/></g><ellipse cx="42" cy="100" rx="28" ry="8" fill="none" stroke="#e7bc72" stroke-opacity=".45" stroke-width="1"/><ellipse cx="258" cy="134" rx="25" ry="4" fill="#000" fill-opacity=".35"/><path d="M230 100Q230 132 258 132Q286 132 286 100Z" fill="url(#kd-bowl)"/><ellipse cx="258" cy="100" rx="28" ry="8" fill="#2b1a0b"/><g clip-path="url(#kd-clip-r)"><ellipse cx="246" cy="102" rx="6.2" ry="3.6" fill="url(#kd-w)"/><ellipse cx="255" cy="99" rx="6.2" ry="3.6" fill="url(#kd-w)"/><ellipse cx="265" cy="101" rx="6.2" ry="3.6" fill="url(#kd-w)"/><ellipse cx="272" cy="103" rx="6.2" ry="3.6" fill="url(#kd-w)"/><ellipse cx="260" cy="104" rx="6.2" ry="3.6" fill="url(#kd-w)"/><ellipse cx="250" cy="105" rx="6.2" ry="3.6" fill="url(#kd-w)"/></g><ellipse cx="258" cy="100" rx="28" ry="8" fill="none" stroke="#e7bc72" stroke-opacity=".45" stroke-width="1"/>
+                  <g transform="rotate(-4 150 75)">
+                    <rect x="85" y="16" width="130" height="130" rx="3" fill="#9a6a32"/>
+                    <rect x="85" y="10" width="130" height="130" rx="3" fill="url(#kd-wood)"/>
+                    <g fill="none" stroke="#8a5a26" stroke-opacity=".16" stroke-width="1.2"><path d="M85 22C115 19 155 26 215 20"/><path d="M85 41C115 38 155 45 215 39"/><path d="M85 58C115 55 155 62 215 56"/><path d="M85 80C115 77 155 84 215 78"/><path d="M85 99C115 96 155 103 215 97"/><path d="M85 121C115 118 155 125 215 119"/></g>
+                    <path d="M94 19V131M108 19V131M122 19V131M136 19V131M150 19V131M164 19V131M178 19V131M192 19V131M206 19V131M94 19H206M94 33H206M94 47H206M94 61H206M94 75H206M94 89H206M94 103H206M94 117H206M94 131H206" stroke="#5a3d1c" stroke-opacity=".8" stroke-width=".8"/>
+                    <g fill="#4a3016"><circle cx="122" cy="47" r="1.7"/><circle cx="178" cy="47" r="1.7"/><circle cx="150" cy="75" r="1.7"/><circle cx="122" cy="103" r="1.7"/><circle cx="178" cy="103" r="1.7"/></g>
+                    <g><circle cx="151.3" cy="62.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="150" cy="61" r="6.5" fill="url(#kd-b)"/></g><g><circle cx="137.3" cy="76.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="136" cy="75" r="6.5" fill="url(#kd-b)"/></g><g><circle cx="165.3" cy="76.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="164" cy="75" r="6.5" fill="url(#kd-b)"/></g><g><circle cx="165.3" cy="48.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="164" cy="47" r="6.5" fill="url(#kd-b)"/></g><g><circle cx="123.3" cy="48.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="122" cy="47" r="6.5" fill="url(#kd-b)"/></g><g><circle cx="179.3" cy="104.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="178" cy="103" r="6.5" fill="url(#kd-b)"/></g><g><circle cx="137.3" cy="104.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="136" cy="103" r="6.5" fill="url(#kd-b)"/></g><g><circle cx="137.3" cy="62.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="136" cy="61" r="6.5" fill="url(#kd-w)"/></g><g><circle cx="165.3" cy="62.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="164" cy="61" r="6.5" fill="url(#kd-w)"/></g><g><circle cx="179.3" cy="76.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="178" cy="75" r="6.5" fill="url(#kd-w)"/></g><g><circle cx="151.3" cy="104.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="150" cy="103" r="6.5" fill="url(#kd-w)"/></g><g><circle cx="123.3" cy="90.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="122" cy="89" r="6.5" fill="url(#kd-w)"/></g>
+                    <g class="kd-capt"><circle cx="151.3" cy="76.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="150" cy="75" r="6.5" fill="url(#kd-w)"/></g>
+                    <circle class="kd-ghost" cx="150" cy="89" r="6.5" fill="#0a0a0a" fill-opacity=".28" stroke="#000" stroke-opacity=".55" stroke-width="1" stroke-dasharray="2 1.6"/>
+                    <g class="kd-new"><circle cx="151.3" cy="90.8" r="6.5" fill="#2a1605" fill-opacity=".35"/><circle cx="150" cy="89" r="6.5" fill="url(#kd-b)"/></g>
+                  </g>
+                </svg>
+              </div>
+            <div class="game-copy">
+              <div><h3>Go</h3><p>A calm, tactile game of territory, patience, and beautifully placed stones.</p></div>
+              <span class="play-arrow" aria-hidden="true">↗</span>
+              <div class="game-meta"><span>2 players</span><span>Strategy</span><span>Touch ready</span></div>
+            </div>
+          </div>
+          <div class="game-card" role="radio" tabindex="0" aria-checked="false" data-game="memory_match">
+  <div class="game-art art-memory" aria-hidden="true">
+                <span class="art-label">Memory</span>
+                <svg class="card-svg" viewBox="0 0 300 150" focusable="false">
+                  <defs>
+                    <linearGradient id="rc-back-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9b80fb"/><stop offset="1" stop-color="#6549cf"/></linearGradient>
+                    <linearGradient id="rc-face" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#31294c"/><stop offset="1" stop-color="#201a37"/></linearGradient>
+                    <radialGradient id="rc-hl" cx=".35" cy=".28" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+                    <pattern id="rc-stripe" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="6" fill="#fff" fill-opacity=".1"/></pattern>
+                    <filter id="rc-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                    <filter id="rc-blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.4"/></filter>
+                    <mask id="rc-moon" maskUnits="userSpaceOnUse" x="-14" y="-14" width="28" height="28"><circle r="10.5" fill="#fff"/><circle cx="5" cy="-4" r="8.6" fill="#000"/></mask>
+                    <g id="rc-backcard"><rect x="-20" y="-27" width="40" height="54" rx="6" fill="url(#rc-back-g)" stroke="#c4b4ff" stroke-opacity=".35"/>
+                      <rect x="-15" y="-22" width="30" height="44" rx="4" fill="url(#rc-stripe)" stroke="#fff" stroke-opacity=".22"/>
+                      <path d="M0 -4.6Q0.828 -0.828 4.6 0Q0.828 0.828 0 4.6Q-0.828 0.828 -4.6 0Q-0.828 -0.828 0 -4.6Z" fill="#fff" fill-opacity=".85"/></g>
+                  </defs>
+                  <use href="#rc-backcard" transform="translate(52 44) rotate(-3)"/><g transform="translate(101 41) rotate(2)"><rect x="-21.5" y="-28.5" width="43" height="57" rx="7" fill="none" stroke="#ffd064" stroke-width="2.4" filter="url(#rc-blur)"/><rect x="-20" y="-27" width="40" height="54" rx="6" fill="url(#rc-face)" stroke="#ffd064" stroke-opacity=".5"/><rect x="-20" y="-27" width="40" height="54" rx="6" fill="url(#rc-hl)"/><path d="M0 -12Q2.16 -2.16 12 0Q2.16 2.16 0 12Q-2.16 2.16 -12 0Q-2.16 -2.16 0 -12Z" fill="#ffd064" filter="url(#rc-glow)"/></g><use href="#rc-backcard" transform="translate(150 44) rotate(-1)"/><use href="#rc-backcard" transform="translate(199 44) rotate(3)"/><g transform="translate(248 44) rotate(-2)"><rect x="-20" y="-27" width="40" height="54" rx="6" fill="url(#rc-face)" stroke="#5fbde8" stroke-opacity=".5"/><rect x="-20" y="-27" width="40" height="54" rx="6" fill="url(#rc-hl)"/><circle r="10.5" fill="#5fbde8" mask="url(#rc-moon)" filter="url(#rc-glow)"/></g><use href="#rc-backcard" transform="translate(52 107) rotate(2)"/><use href="#rc-backcard" transform="translate(101 107) rotate(-2)"/><g transform="translate(150 107) rotate(1)"><g class="rc-flip-back"><use href="#rc-backcard"/></g><g class="rc-flip-front"><rect x="-20" y="-27" width="40" height="54" rx="6" fill="url(#rc-face)" stroke="#5fbde8" stroke-opacity=".5"/><rect x="-20" y="-27" width="40" height="54" rx="6" fill="url(#rc-hl)"/><circle r="10.5" fill="#5fbde8" mask="url(#rc-moon)" filter="url(#rc-glow)"/></g></g><g transform="translate(199 104) rotate(-3)"><rect x="-21.5" y="-28.5" width="43" height="57" rx="7" fill="none" stroke="#ffd064" stroke-width="2.4" filter="url(#rc-blur)"/><rect x="-20" y="-27" width="40" height="54" rx="6" fill="url(#rc-face)" stroke="#ffd064" stroke-opacity=".5"/><rect x="-20" y="-27" width="40" height="54" rx="6" fill="url(#rc-hl)"/><path d="M0 -12Q2.16 -2.16 12 0Q2.16 2.16 0 12Q-2.16 2.16 -12 0Q-2.16 -2.16 0 -12Z" fill="#ffd064" filter="url(#rc-glow)"/></g><use href="#rc-backcard" transform="translate(248 107) rotate(2)"/><path class="rc-spark" d="M78 8.6Q78.612 11.388 81.4 12Q78.612 12.612 78 15.4Q77.388 12.612 74.6 12Q77.388 11.388 78 8.6Z" fill="#fff"/><path class="rc-spark" d="M73 67.6Q73.432 69.568 75.4 70Q73.432 70.432 73 72.4Q72.568 70.432 70.6 70Q72.568 69.568 73 67.6Z" fill="#fff"/><path class="rc-spark" d="M178 77.4Q178.468 79.532 180.6 80Q178.468 80.468 178 82.6Q177.532 80.468 175.4 80Q177.532 79.532 178 77.4Z" fill="#fff"/><path class="rc-spark" d="M180 132.8Q180.576 135.424 183.2 136Q180.576 136.576 180 139.2Q179.424 136.576 176.8 136Q179.424 135.424 180 132.8Z" fill="#fff"/>
+                </svg>
+              </div>
+            <div class="game-copy">
+              <div><h3>Memory Match</h3><p>Find every pair with fewer turns. Easy to learn, surprisingly hard to put down.</p></div>
+              <span class="play-arrow" aria-hidden="true">↗</span>
+              <div class="game-meta"><span>2–5 players</span><span>Casual</span><span>Touch ready</span></div>
+            </div>
+          </div>
+          <div class="game-card" role="radio" tabindex="0" aria-checked="false" data-game="northstar">
+  <div class="game-art art-northstar" aria-hidden="true">
+                <span class="art-label">Strategy</span>
+                <svg class="card-svg" viewBox="0 0 300 150" focusable="false">
+                  <defs>
+                    <pattern id="ns-gb" width="14" height="14" x="4" y="4" patternUnits="userSpaceOnUse"><path d="M14 0H0V14" fill="none" stroke="#6fb2ff" stroke-opacity=".3" stroke-width=".7"/></pattern>
+                    <pattern id="ns-gr" width="14" height="14" x="4" y="4" patternUnits="userSpaceOnUse"><path d="M14 0H0V14" fill="none" stroke="#ff8a78" stroke-opacity=".28" stroke-width=".7"/></pattern>
+                    <linearGradient id="ns-ship" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9d4ff"/><stop offset="1" stop-color="#4a86d6"/></linearGradient>
+                    <radialGradient id="ns-fire"><stop offset="0" stop-color="#fff1cf"/><stop offset=".4" stop-color="#ff9d73"/><stop offset="1" stop-color="#ff5838" stop-opacity="0"/></radialGradient>
+                  </defs>
+                  <g transform="translate(26 18) rotate(-8 60 60)">
+                    <rect width="120" height="120" rx="6" fill="#0a2740" stroke="#2c6a96" stroke-width="1.2"/>
+                    <rect x="4" y="4" width="112" height="112" fill="url(#ns-gb)" stroke="#6fb2ff" stroke-opacity=".3" stroke-width=".7"/>
+                    <g fill="url(#ns-ship)" stroke="#d6ecff" stroke-opacity=".55" stroke-width=".8"><rect x="20" y="20" width="52" height="10" rx="5"/><rect x="90" y="34" width="10" height="38" rx="5"/><rect x="34" y="62" width="38" height="10" rx="5"/><rect x="20" y="90" width="24" height="10" rx="5"/><rect x="90" y="90" width="10" height="24" rx="5"/></g>
+                    <circle cx="81" cy="11" r="1.7" fill="#eaf8f7" fill-opacity="0.45"/><circle cx="25" cy="67" r="1.7" fill="#eaf8f7" fill-opacity="0.45"/><circle cx="67" cy="95" r="1.7" fill="#eaf8f7" fill-opacity="0.45"/><circle cx="109" cy="39" r="1.7" fill="#eaf8f7" fill-opacity="0.45"/>
+                    <circle cx="39" cy="25" r="6" fill="url(#ns-fire)"/><circle cx="39" cy="25" r="2.2" fill="#ff725e"/>
+                  </g>
+                  <g transform="translate(152 14) rotate(5 60 60)">
+                    <rect width="120" height="120" rx="6" fill="#2a1220" stroke="#83384a" stroke-width="1.2"/>
+                    <rect x="4" y="4" width="112" height="112" fill="url(#ns-gr)" stroke="#ff8a78" stroke-opacity=".28" stroke-width=".7"/>
+                    <rect x="20" y="90" width="38" height="10" rx="5" fill="#ff725e" fill-opacity=".2" stroke="#ff725e" stroke-width=".9" stroke-dasharray="2 1.6"/>
+                    <path d="M23 93l4 4m0-4-4 4M37 93l4 4m0-4-4 4M51 93l4 4m0-4-4 4" stroke="#ffd1c2" stroke-opacity=".8" stroke-width="1"/>
+                    <circle cx="25" cy="25" r="1.7" fill="#eaf8f7" fill-opacity="0.7"/><circle cx="81" cy="25" r="1.7" fill="#eaf8f7" fill-opacity="0.7"/><circle cx="11" cy="53" r="1.7" fill="#eaf8f7" fill-opacity="0.7"/><circle cx="109" cy="67" r="1.7" fill="#eaf8f7" fill-opacity="0.7"/><circle cx="53" cy="11" r="1.7" fill="#eaf8f7" fill-opacity="0.7"/><circle cx="95" cy="95" r="1.7" fill="#eaf8f7" fill-opacity="0.7"/><circle cx="39" cy="67" r="1.7" fill="#eaf8f7" fill-opacity="0.7"/><circle cx="95" cy="39" r="1.7" fill="#eaf8f7" fill-opacity="0.7"/>
+                    <rect x="32" y="46" width="14" height="14" fill="#822c25" fill-opacity=".45"/><circle cx="39" cy="53" r="7.5" fill="url(#ns-fire)"/><circle cx="39" cy="53" r="2.8" fill="#ff725e"/><path d="M35.4 49.4l7.2 7.2m0-7.2-7.2 7.2" stroke="#ffd1c2" stroke-width="1.3" stroke-linecap="round"/><rect x="46" y="46" width="14" height="14" fill="#822c25" fill-opacity=".45"/><circle cx="53" cy="53" r="7.5" fill="url(#ns-fire)"/><circle cx="53" cy="53" r="2.8" fill="#ff725e"/><path d="M49.4 49.4l7.2 7.2m0-7.2-7.2 7.2" stroke="#ffd1c2" stroke-width="1.3" stroke-linecap="round"/>
+                    <rect x="60" y="46" width="14" height="14" fill="#f1bd62" fill-opacity=".16" stroke="#f1bd62" stroke-opacity=".75" stroke-width=".8"/>
+                    <circle class="ns-ping" cx="67" cy="53" r="10" fill="none" stroke="#f1bd62" stroke-width="1.2"/>
+                    <g stroke="#f1bd62" stroke-width="1.5" stroke-linecap="round" fill="none">
+                      <circle cx="67" cy="53" r="10"/>
+                      <path d="M67 37v7M67 62v7M51 53h7M76 53h7"/>
+                    </g>
+                    <circle cx="67" cy="53" r="1.9" fill="#f1bd62"/>
+                  </g>
+                </svg>
+              </div>
+            <div class="game-copy">
+              <div><h3>Northstar</h3><p>Read the grid, call your shot, and send the rival fleet to the deep.</p></div>
+              <span class="play-arrow" aria-hidden="true">↗</span>
+              <div class="game-meta"><span>2 players</span><span>Strategy</span><span>Touch ready</span></div>
+            </div>
+          </div>
+          <div class="game-card" role="radio" tabindex="0" aria-checked="false" data-game="iron_routes">
+  <div class="game-art art-routes" aria-hidden="true">
+                <span class="art-label">Railways</span>
+                <svg class="card-svg" viewBox="0 0 300 150" focusable="false">
+                  <defs>
+                    <linearGradient id="ir-loco" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d83a3a"/><stop offset=".2" stop-color="#ef8a24"/><stop offset=".4" stop-color="#f2cf2e"/><stop offset=".6" stop-color="#2f9e57"/><stop offset=".8" stop-color="#2f6fdb"/><stop offset="1" stop-color="#8c55d6"/></linearGradient>
+                    <linearGradient id="ir-sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".16"/></linearGradient>
+                    <clipPath id="ir-clip"><rect x="7" y="6" width="212" height="138.79" rx="7"/></clipPath>
+                  </defs>
+                  <g clip-path="url(#ir-clip)">
+                    <rect x="7" y="6" width="212" height="138.79" fill="#a9c9d4"/>
+                    <g transform="translate(18.68 9.14) scale(0.22457600000000003)">
+                      <path d="M15.3 -40V700M91.9 -40V700M168.5 -40V700M245.1 -40V700M321.7 -40V700M398.3 -40V700M474.9 -40V700M551.5 -40V700M628.1 -40V700M704.7 -40V700M781.3 -40V700M857.9 -40V700M934.5 -40V700M-100 540H1000M-100 440H1000M-100 340H1000M-100 240H1000M-100 140H1000M-100 40H1000" stroke="#506e78" stroke-opacity=".15" stroke-width="2"/>
+                      <polygon points="-76.6,-20 1087.7,-20 1087.7,100 1011.1,110 949.8,130 911.5,144 857.9,168 848.7,188 857.9,204 834.9,212 796.6,228 793.6,248 773.7,268 766,300 772.1,334 750.7,348 727.7,364 704.7,388 683.3,424 686.3,448 700.1,476 706.3,510 703.2,536 686.3,534 677.1,516 663.4,484 661.8,460 643.4,440 620.5,446 605.1,432 582.2,432 562.2,436 560.7,456 543.9,458 520.9,448 490.2,448 474.9,456 451.9,474 439.7,492 438.2,524 433.6,560 430.5,660 214.5,660 214.5,550 180.8,480 156.3,434 136.3,390 128.7,372 114.9,360 82.7,348 62.8,308 52.1,288 46,274 33.7,248 26,232 27.6,200 30.6,160 30.6,116 19.9,72 41.4,72 49,60 30.6,44 7.7,30 -23,20 -76.6,-20" fill="#eadfc2" stroke="#8f7d5e" stroke-width="3"/>
+                      <g fill="#a9c9d4" stroke="#8fa9b2" stroke-width="2"><polygon points="519.3,106 551.5,108 589.8,110 634.2,110 631.2,90 612.8,66 574.5,72 551.5,84 528.5,96"/><polygon points="585.2,196 600.5,206 609.7,190 606.7,160 618.9,134 629.7,124 605.1,122 589.8,136 583.7,160"/><polygon points="635.8,122 651.1,132 666.4,150 668,180 678.7,168 678.7,144 701.7,140 695.5,122 666.4,118"/><polygon points="652.6,204 681.7,208 720,192 717,182 689.4,188 658.8,198"/><polygon points="707.8,174 735.4,174 761.4,170 761.4,158 743,160 713.9,165"/></g>
+                      <g fill="none" stroke="#a8936c" stroke-width="2.6" stroke-dasharray="9 7"><polyline points="41.4,60 471.9,60 471.9,52 559.2,80 634.2,110 668,132 666.4,180 657.2,200 720,188 720,174 758.3,156 785.9,140 834.9,140 857.9,110 873.2,92 891.6,98 891.6,128 903.9,144"/><polyline points="136.3,390 173.1,386 229.8,414 272.7,414 298.7,404 329.4,448 352.4,460 376.9,444 406,490 441.2,522"/></g>
+                      <g fill="none">
+                        <path d="M48.14 64.34L52.96 77.66M62.54 99.96L59.6 120.19M55.08 51.37L80.21 45.17M85.55 43.85L110.68 37.66M116.02 36.34L141.15 30.15M146.49 28.83L171.62 22.63M54.73 57.78L85.52 69.05M90.68 70.95L121.47 82.22M67.5 80.21L91.3 79.58M96.8 79.43L120.6 78.8M67.9 95.2L91.7 94.57M97.2 94.42L121 93.79M138.48 77.26L155.38 55.18M158.72 50.82L175.62 28.74M134.2 96.74L140.35 124.32M141.55 129.68L147.7 157.26M142.4 88.95L167.2 95.87M172.5 97.35L197.3 104.26M202.6 105.74L227.4 112.65M232.7 114.13L257.5 121.05M189.3 28.49L204.63 47.06M208.13 51.3L223.45 69.88M226.95 74.12L242.27 92.7M245.77 96.94L261.1 115.51M193.26 20.93L228.44 23.9M233.92 24.36L269.1 27.33M274.58 27.8L309.76 30.77M315.24 31.23L350.42 34.2M355.9 34.67L391.08 37.64M396.56 38.1L431.74 41.07M60.88 133.92L83.77 142.67M88.9 144.63L111.8 153.37M116.93 155.33L139.82 164.08M43.43 141.22L44.29 170.1M44.46 175.6L45.32 204.48M45.49 209.97L46.35 238.85M46.51 244.35L47.37 273.23M56.75 297.22L70.97 313.59M74.58 317.74L88.8 334.1M92.41 338.25L106.62 354.62M65.78 287.03L92.47 294.67M97.75 296.18L124.45 303.82M129.73 305.33L156.42 312.97M62.17 275.49L79.8 253.94M83.28 249.68L100.91 228.13M104.39 223.87L122.02 202.32M125.5 198.06L143.13 176.51M124.77 367.65L129.53 376.35M122.77 345.09L136.22 333.2M140.34 329.56L153.79 317.67M145.63 384.06L171.14 379.49M176.56 378.51L202.07 373.94M172.17 306.29L183.33 285.33M185.92 280.48L197.08 259.52M199.67 254.67L210.83 233.71M163.34 169.41L185.81 188.5M190 192.07L212.47 211.16M153.63 180.84L176.1 199.93M180.29 203.5L202.76 222.59M160.41 164.16L189.43 153.33M194.59 151.41L223.61 140.59M228.77 138.67L257.79 127.84M221.08 214.24L233.37 190.67M235.91 185.79L248.19 162.21M250.73 157.33L263.02 133.76M226.77 226.24L251.23 231.33M256.62 232.45L281.08 237.55M286.47 238.67L310.93 243.76M223.1 367.89L252.5 356.03M257.6 353.97L287 342.11M223.23 375.78L254.02 387.05M259.18 388.95L289.97 400.22M297.72 348.99L298.62 368.25M298.88 373.75L299.78 393.01M292.78 325.44L298.12 305.4M299.53 300.09L304.87 280.05M306.29 274.74L311.62 254.7M307.28 329.3L312.61 309.26M314.03 303.95L319.37 283.91M320.78 278.6L326.12 258.56M272.52 134.07L282.05 155.76M284.27 160.79L293.79 182.48M296.01 187.52L305.53 209.21M307.75 214.24L317.28 235.93M278.95 122.16L307.43 117.33M312.86 116.41L341.34 111.59M346.77 110.67L375.25 105.84M393.52 95.88L412.55 75.03M416.25 70.97L435.28 50.12M448.32 51.45L462.13 74.67M464.95 79.39L478.75 102.61M481.57 107.33L495.38 130.55M396.6 107.29L424.4 116M429.65 117.64L457.45 126.36M462.7 128L490.5 136.71M392.3 113.09L405.62 132.64M408.72 137.18L422.05 156.73M425.15 161.27L438.48 180.82M441.58 185.36L454.9 204.91M332.67 246.83L362.9 249.1M368.38 249.52L398.61 251.79M404.09 252.21L434.32 254.48M439.8 254.9L470.03 257.17M308.18 337.37L333.42 335.92M338.91 335.61L364.15 334.16M369.65 333.84L394.89 332.39M400.38 332.08L425.62 330.63M310.52 408.06L340.63 420M345.75 422.03L375.85 433.97M380.97 436L411.08 447.94M418.22 439.05L426.31 417.89M428.28 412.75L436.37 391.6M432.23 444.4L440.32 423.25M442.29 418.11L450.38 396.95M432.15 450.17L457.95 445.83M437.8 374.67L431.38 342.25M452.52 371.75L446.1 339.33M442.37 320.64L457.36 296.34M460.24 291.66L475.23 267.36M469.63 251.07L458.8 227.11M483.3 244.89L472.47 220.93M466.32 204.32L479.74 179.42M482.36 174.58L495.78 149.68M514.31 140.25L534.44 154.55M538.93 157.74L559.06 172.03M563.54 175.22L583.67 189.52M505.63 152.48L525.76 166.78M530.24 169.97L550.37 184.26M554.86 187.45L574.99 201.75M490.78 267.03L510.93 270.02M516.37 270.82L536.52 273.81M447.57 330.76L474.9 332.67M480.39 333.05L507.71 334.95M513.2 335.33L540.53 337.24M457.36 379.56L482.03 368.67M487.06 366.45L511.74 355.55M516.77 353.33L541.44 342.44M480.16 450.95L507.02 449.63M512.52 449.36L539.38 448.03M551.34 349L551 372M550.92 377.5L550.58 400.5M550.5 406L550.16 429M551.03 327.01L550.12 305.75M549.88 300.25L548.97 278.99M554.18 258.58L566.98 237.35M569.82 232.65L582.62 211.42M559.43 266.75L589.42 263.31M594.88 262.69L624.87 259.25M556.58 275.46L572.48 290.13M576.52 293.87L592.42 308.54M561.53 333.49L590.47 320.51M560.99 439.49L592.9 438M598.39 437.74L630.31 436.26M635.8 436L667.71 434.51M674.16 446.51L682.25 478.19M683.61 483.52L691.71 515.2M624.74 361.59L614.49 347.66M611.23 343.23L600.98 329.3M636.82 352.7L626.57 338.77M623.31 334.34L613.06 320.41M646.96 360.75L662.48 352.31M667.32 349.69L682.84 341.25M690.97 346.89L687.9 368.67M687.13 374.11L684.07 395.89M683.3 401.33L680.23 423.11M705.2 331.99L725.8 305.8M729.2 301.47L749.8 275.28M606.22 306.6L616.72 289.35M619.58 284.65L630.08 267.4M646.79 258.38L674.1 259.33M679.6 259.52L706.9 260.48M712.4 260.67L739.71 261.62M632.46 245.11L639.31 226.05M641.17 220.88L648.02 201.82M646.58 250.18L653.43 231.12M655.29 225.95L662.14 206.89M672 195.7L687.3 187.93M692.2 185.44L707.49 177.67M511.41 143.56L541.75 153.95M546.95 155.73L577.3 166.11M582.5 167.89L612.85 178.27M618.05 180.05L648.39 190.44M722.8 172.46L741.47 186M745.92 189.23L764.58 202.77M769.03 206L787.7 219.54M814.96 135.42L826.89 154.72M829.78 159.4L841.7 178.7M802.2 143.3L814.12 162.6M817.01 167.28L828.94 186.58M802.09 140.98L800.73 162M800.38 167.49L799.02 188.51M798.67 194L797.31 215.02M836.91 204.64L809.89 225.28M827.81 192.72L800.79 213.36M792.57 238.69L780.44 248.2M776.11 251.6L763.98 261.11M667.64 200.54L689.43 216.67M693.85 219.94L715.65 236.06M720.07 239.33L741.86 255.46M595.42 210.39L610.27 227.9M613.83 232.1L628.68 249.61M611.25 318.34L643.81 325.42M649.19 326.58L681.75 333.66M559.62 445.33L582.26 457.87M587.08 460.53L609.72 473.07M614.53 475.73L637.17 488.27M641.98 490.93L664.62 503.47M669.44 506.13L692.08 518.67M332.42 243.54L357.89 237.69M363.25 236.46L388.72 230.62M394.08 229.38L419.55 223.54M424.91 222.31L450.38 216.46" stroke="#2c241b" stroke-width="13"/>
+                        <path d="M48.14 64.34L52.96 77.66M193.26 20.93L228.44 23.9M233.92 24.36L269.1 27.33M274.58 27.8L309.76 30.77M315.24 31.23L350.42 34.2M355.9 34.67L391.08 37.64M396.56 38.1L431.74 41.07M145.63 384.06L171.14 379.49M176.56 378.51L202.07 373.94M163.34 169.41L185.81 188.5M190 192.07L212.47 211.16M308.18 337.37L333.42 335.92M338.91 335.61L364.15 334.16M369.65 333.84L394.89 332.39M400.38 332.08L425.62 330.63M505.63 152.48L525.76 166.78M530.24 169.97L550.37 184.26M554.86 187.45L574.99 201.75M624.74 361.59L614.49 347.66M611.23 343.23L600.98 329.3M802.2 143.3L814.12 162.6M817.01 167.28L828.94 186.58M667.64 200.54L689.43 216.67M693.85 219.94L715.65 236.06M720.07 239.33L741.86 255.46" stroke="#ef8a24" stroke-width="9"/><path d="M62.54 99.96L59.6 120.19M56.75 297.22L70.97 313.59M74.58 317.74L88.8 334.1M92.41 338.25L106.62 354.62M160.41 164.16L189.43 153.33M194.59 151.41L223.61 140.59M228.77 138.67L257.79 127.84M457.36 379.56L482.03 368.67M487.06 366.45L511.74 355.55M516.77 353.33L541.44 342.44M554.18 258.58L566.98 237.35M569.82 232.65L582.62 211.42M690.97 346.89L687.9 368.67M687.13 374.11L684.07 395.89M683.3 401.33L680.23 423.11M672 195.7L687.3 187.93M692.2 185.44L707.49 177.67" stroke="#2f6fdb" stroke-width="9"/><path d="M55.08 51.37L80.21 45.17M85.55 43.85L110.68 37.66M116.02 36.34L141.15 30.15M146.49 28.83L171.62 22.63M221.08 214.24L233.37 190.67M235.91 185.79L248.19 162.21M250.73 157.33L263.02 133.76M432.15 450.17L457.95 445.83M483.3 244.89L472.47 220.93M447.57 330.76L474.9 332.67M480.39 333.05L507.71 334.95M513.2 335.33L540.53 337.24M646.58 250.18L653.43 231.12M655.29 225.95L662.14 206.89M511.41 143.56L541.75 153.95M546.95 155.73L577.3 166.11M582.5 167.89L612.85 178.27M618.05 180.05L648.39 190.44M827.81 192.72L800.79 213.36" stroke="#26282b" stroke-width="9"/><path d="M54.73 57.78L85.52 69.05M90.68 70.95L121.47 82.22M67.9 95.2L91.7 94.57M97.2 94.42L121 93.79M189.3 28.49L204.63 47.06M208.13 51.3L223.45 69.88M226.95 74.12L242.27 92.7M245.77 96.94L261.1 115.51M62.17 275.49L79.8 253.94M83.28 249.68L100.91 228.13M104.39 223.87L122.02 202.32M125.5 198.06L143.13 176.51M153.63 180.84L176.1 199.93M180.29 203.5L202.76 222.59M297.72 348.99L298.62 368.25M298.88 373.75L299.78 393.01M393.52 95.88L412.55 75.03M416.25 70.97L435.28 50.12M392.3 113.09L405.62 132.64M408.72 137.18L422.05 156.73M425.15 161.27L438.48 180.82M441.58 185.36L454.9 204.91M332.67 246.83L362.9 249.1M368.38 249.52L398.61 251.79M404.09 252.21L434.32 254.48M439.8 254.9L470.03 257.17M432.23 444.4L440.32 423.25M442.29 418.11L450.38 396.95M480.16 450.95L507.02 449.63M512.52 449.36L539.38 448.03M551.03 327.01L550.12 305.75M549.88 300.25L548.97 278.99M561.53 333.49L590.47 320.51M560.99 439.49L592.9 438M598.39 437.74L630.31 436.26M635.8 436L667.71 434.51M636.82 352.7L626.57 338.77M623.31 334.34L613.06 320.41M646.79 258.38L674.1 259.33M679.6 259.52L706.9 260.48M712.4 260.67L739.71 261.62M802.09 140.98L800.73 162M800.38 167.49L799.02 188.51M798.67 194L797.31 215.02M595.42 210.39L610.27 227.9M613.83 232.1L628.68 249.61M611.25 318.34L643.81 325.42M649.19 326.58L681.75 333.66" stroke="#a9afb3" stroke-width="9"/><path d="M67.5 80.21L91.3 79.58M96.8 79.43L120.6 78.8M172.17 306.29L183.33 285.33M185.92 280.48L197.08 259.52M199.67 254.67L210.83 233.71M307.28 329.3L312.61 309.26M314.03 303.95L319.37 283.91M320.78 278.6L326.12 258.56M278.95 122.16L307.43 117.33M312.86 116.41L341.34 111.59M346.77 110.67L375.25 105.84M442.37 320.64L457.36 296.34M460.24 291.66L475.23 267.36M514.31 140.25L534.44 154.55M538.93 157.74L559.06 172.03M563.54 175.22L583.67 189.52M674.16 446.51L682.25 478.19M683.61 483.52L691.71 515.2M722.8 172.46L741.47 186M745.92 189.23L764.58 202.77M769.03 206L787.7 219.54" stroke="#2f9e57" stroke-width="9"/><path d="M138.48 77.26L155.38 55.18M158.72 50.82L175.62 28.74M65.78 287.03L92.47 294.67M97.75 296.18L124.45 303.82M129.73 305.33L156.42 312.97M292.78 325.44L298.12 305.4M299.53 300.09L304.87 280.05M306.29 274.74L311.62 254.7M310.52 408.06L340.63 420M345.75 422.03L375.85 433.97M380.97 436L411.08 447.94M452.52 371.75L446.1 339.33M466.32 204.32L479.74 179.42M482.36 174.58L495.78 149.68M551.34 349L551 372M550.92 377.5L550.58 400.5M550.5 406L550.16 429M646.96 360.75L662.48 352.31M667.32 349.69L682.84 341.25M632.46 245.11L639.31 226.05M641.17 220.88L648.02 201.82M836.91 204.64L809.89 225.28" stroke="#8c55d6" stroke-width="9"/><path d="M134.2 96.74L140.35 124.32M141.55 129.68L147.7 157.26M43.43 141.22L44.29 170.1M44.46 175.6L45.32 204.48M45.49 209.97L46.35 238.85M46.51 244.35L47.37 273.23M223.23 375.78L254.02 387.05M259.18 388.95L289.97 400.22M272.52 134.07L282.05 155.76M284.27 160.79L293.79 182.48M296.01 187.52L305.53 209.21M307.75 214.24L317.28 235.93M448.32 51.45L462.13 74.67M464.95 79.39L478.75 102.61M481.57 107.33L495.38 130.55M437.8 374.67L431.38 342.25M606.22 306.6L616.72 289.35M619.58 284.65L630.08 267.4M792.57 238.69L780.44 248.2M776.11 251.6L763.98 261.11" stroke="#f2cf2e" stroke-width="9"/><path d="M142.4 88.95L167.2 95.87M172.5 97.35L197.3 104.26M202.6 105.74L227.4 112.65M232.7 114.13L257.5 121.05M122.77 345.09L136.22 333.2M140.34 329.56L153.79 317.67M223.1 367.89L252.5 356.03M257.6 353.97L287 342.11M469.63 251.07L458.8 227.11M559.43 266.75L589.42 263.31M594.88 262.69L624.87 259.25M705.2 331.99L725.8 305.8M729.2 301.47L749.8 275.28M559.62 445.33L582.26 457.87M587.08 460.53L609.72 473.07M614.53 475.73L637.17 488.27M641.98 490.93L664.62 503.47M669.44 506.13L692.08 518.67" stroke="#d83a3a" stroke-width="9"/><path d="M60.88 133.92L83.77 142.67M88.9 144.63L111.8 153.37M116.93 155.33L139.82 164.08M124.77 367.65L129.53 376.35M226.77 226.24L251.23 231.33M256.62 232.45L281.08 237.55M286.47 238.67L310.93 243.76M396.6 107.29L424.4 116M429.65 117.64L457.45 126.36M462.7 128L490.5 136.71M418.22 439.05L426.31 417.89M428.28 412.75L436.37 391.6M490.78 267.03L510.93 270.02M516.37 270.82L536.52 273.81M556.58 275.46L572.48 290.13M576.52 293.87L592.42 308.54M814.96 135.42L826.89 154.72M829.78 159.4L841.7 178.7" stroke="#f4f1e8" stroke-width="9"/>
+                        <path d="M332.42 243.54L357.89 237.69M363.25 236.46L388.72 230.62M394.08 229.38L419.55 223.54M424.91 222.31L450.38 216.46" stroke="#2f6fdb" stroke-width="9"/>
+                        <path d="M47.7 97.81L44.76 118.04M58.43 140.77L59.29 169.65M59.45 175.15L60.31 204.03M60.48 209.52L61.34 238.4M61.51 243.9L62.37 272.78M68.08 287.38L82.29 303.75M85.9 307.9L100.12 324.26M103.73 328.41L117.95 344.78M132.71 356.33L146.16 344.44M150.28 340.8L163.73 328.91M173.97 324.51L188.21 341.87M191.69 346.13L205.93 363.49M451.01 394.36L457.12 411.41M458.98 416.59L465.09 433.64M472.05 212.97L503.5 210M508.98 209.48L540.42 206.52M545.9 206L577.35 203.03M492.98 252.19L513.13 255.18M518.57 255.98L538.72 258.97M479.42 435.97L506.28 434.64M511.78 434.37L538.64 433.05M558.39 432.89L579.1 415.33M583.3 411.78L604 394.22M608.2 390.67L628.91 373.11M688.69 442.8L696.79 474.48M698.15 479.81L706.24 511.49M643.02 375.4L656.57 397.65M659.43 402.35L672.98 424.6M693.4 322.72L714 296.53M717.4 292.2L738 266.01M599.23 200.76L620.82 198.31M626.28 197.69L647.87 195.24M665.21 182.33L680.5 174.56M685.4 172.07L700.7 164.3M724.1 161.87L743.53 154M748.63 151.94L768.07 144.06M773.17 142L792.6 134.13M783.32 226.89L771.19 236.4M766.86 239.8L754.73 249.31" stroke="#fff" stroke-width="15"/>
+                        <path d="M47.7 97.81L44.76 118.04M58.43 140.77L59.29 169.65M59.45 175.15L60.31 204.03M60.48 209.52L61.34 238.4M61.51 243.9L62.37 272.78M68.08 287.38L82.29 303.75M85.9 307.9L100.12 324.26M103.73 328.41L117.95 344.78M132.71 356.33L146.16 344.44M150.28 340.8L163.73 328.91M173.97 324.51L188.21 341.87M191.69 346.13L205.93 363.49" stroke="#2fa4ff" stroke-width="10.5"/><path d="M451.01 394.36L457.12 411.41M458.98 416.59L465.09 433.64M479.42 435.97L506.28 434.64M511.78 434.37L538.64 433.05M558.39 432.89L579.1 415.33M583.3 411.78L604 394.22M608.2 390.67L628.91 373.11M688.69 442.8L696.79 474.48M698.15 479.81L706.24 511.49M643.02 375.4L656.57 397.65M659.43 402.35L672.98 424.6M693.4 322.72L714 296.53M717.4 292.2L738 266.01M783.32 226.89L771.19 236.4M766.86 239.8L754.73 249.31" stroke="#2fd67f" stroke-width="10.5"/><path d="M472.05 212.97L503.5 210M508.98 209.48L540.42 206.52M545.9 206L577.35 203.03M492.98 252.19L513.13 255.18M518.57 255.98L538.72 258.97M599.23 200.76L620.82 198.31M626.28 197.69L647.87 195.24M665.21 182.33L680.5 174.56M685.4 172.07L700.7 164.3M724.1 161.87L743.53 154M748.63 151.94L768.07 144.06M773.17 142L792.6 134.13" stroke="#ff4d6d" stroke-width="10.5"/>
+                        <g class="ir-car" style="--d:0.50s"><path d="M332.42 243.54L357.89 237.69" stroke="#fff" stroke-width="15"/><path d="M332.42 243.54L357.89 237.69" stroke="#ff4d6d" stroke-width="10.5"/></g><g class="ir-car" style="--d:0.62s"><path d="M363.25 236.46L388.72 230.62" stroke="#fff" stroke-width="15"/><path d="M363.25 236.46L388.72 230.62" stroke="#ff4d6d" stroke-width="10.5"/></g><g class="ir-car" style="--d:0.74s"><path d="M394.08 229.38L419.55 223.54" stroke="#fff" stroke-width="15"/><path d="M394.08 229.38L419.55 223.54" stroke="#ff4d6d" stroke-width="10.5"/></g><g class="ir-car" style="--d:0.86s"><path d="M424.91 222.31L450.38 216.46" stroke="#fff" stroke-width="15"/><path d="M424.91 222.31L450.38 216.46" stroke="#ff4d6d" stroke-width="10.5"/></g>
+                      </g>
+                      <g fill="#fffaf0" stroke="#3a2f22" stroke-width="3"><circle cx="44.4" cy="54" r="7.5"/><circle cx="56.7" cy="88" r="7.5"/><circle cx="131.8" cy="86" r="7.5"/><circle cx="50.6" cy="130" r="7.5"/><circle cx="55.2" cy="284" r="7.5"/><circle cx="119.5" cy="358" r="7.5"/><circle cx="134.8" cy="386" r="7.5"/><circle cx="167" cy="316" r="7.5"/><circle cx="212.9" cy="372" r="7.5"/><circle cx="216" cy="224" r="7.5"/><circle cx="150.1" cy="168" r="7.5"/><circle cx="182.3" cy="20" r="7.5"/><circle cx="268.1" cy="124" r="7.5"/><circle cx="297.2" cy="338" r="7.5"/><circle cx="300.3" cy="404" r="7.5"/><circle cx="421.3" cy="452" r="7.5"/><circle cx="442.7" cy="42" r="7.5"/><circle cx="386.1" cy="104" r="7.5"/><circle cx="461.1" cy="214" r="7.5"/><circle cx="481" cy="258" r="7.5"/><circle cx="436.6" cy="330" r="7.5"/><circle cx="447.3" cy="384" r="7.5"/><circle cx="468.8" cy="444" r="7.5"/><circle cx="501" cy="140" r="7.5"/><circle cx="588.3" cy="202" r="7.5"/><circle cx="548.5" cy="268" r="7.5"/><circle cx="551.5" cy="338" r="7.5"/><circle cx="550" cy="440" r="7.5"/><circle cx="637.3" cy="366" r="7.5"/><circle cx="600.5" cy="316" r="7.5"/><circle cx="658.8" cy="194" r="7.5"/><circle cx="635.8" cy="258" r="7.5"/><circle cx="713.9" cy="166" r="7.5"/><circle cx="841.1" cy="192" r="7.5"/><circle cx="796.6" cy="226" r="7.5"/><circle cx="750.7" cy="262" r="7.5"/><circle cx="692.5" cy="336" r="7.5"/><circle cx="701.7" cy="524" r="7.5"/><circle cx="678.7" cy="434" r="7.5"/><circle cx="321.7" cy="246" r="10"/><circle cx="802.8" cy="130" r="10"/></g>
+                      <g class="ir-hi" fill="#ffcf3f" stroke="#7a3d00" stroke-width="3.6"><circle cx="321.7" cy="246" r="11"/><circle cx="802.8" cy="130" r="11"/></g>
+                      <g font-family="Inter,ui-sans-serif,system-ui,-apple-system,sans-serif" font-size="25" font-weight="800" fill="#2b2218" stroke="#faf4e6" stroke-opacity=".92" stroke-width="7" stroke-linejoin="round" paint-order="stroke"><text x="305.7" y="278" text-anchor="middle">Denver</text><text x="802.8" y="110" text-anchor="middle">Montréal</text></g>
+                    </g>
+                  </g>
+                  <rect x="7" y="6" width="212" height="138.79" rx="7" fill="none" stroke="#8f7d5e" stroke-width="1"/>
+                  <g transform="translate(106.58 51.8)"><g class="ir-pts"><circle r="7" fill="#e8b04b" stroke="#2a1a00" stroke-width="1.1"/><text y="2.5" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="7" font-weight="900" fill="#2a1a00" text-anchor="middle">+8</text></g></g>
+                  <g transform="translate(260 26) rotate(4)">
+                    <rect x="-36" y="-17" width="72" height="34" rx="4" fill="#000" fill-opacity=".28" transform="translate(1 2)"/>
+                    <rect x="-36" y="-17" width="72" height="34" rx="4" fill="#f3e7cf" stroke="#c9b48c" stroke-width=".7"/>
+                    <text x="-31" y="-7.5" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="3.4" font-weight="800" letter-spacing=".6" fill="#8a7352">DESTINATION</text>
+                    <text x="-31" y="1.5" font-family="Inter,ui-sans-serif,system-ui,-apple-system,sans-serif" font-size="6.6" font-weight="800" fill="#2b2218">Denver</text>
+                    <text x="-31" y="10" font-family="Inter,ui-sans-serif,system-ui,-apple-system,sans-serif" font-size="6.6" font-weight="800" fill="#2b2218">→ Montréal</text>
+                    <rect x="17" y="-7" width="14" height="12" rx="3" fill="#2b2218"/><text x="24" y="1.6" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="6.4" font-weight="900" fill="#f3e7cf" text-anchor="middle">14</text>
+                    <g transform="translate(18 12.5) rotate(-7)"><g class="ir-done"><rect x="-16" y="-4" width="32" height="8" rx="1.8" fill="#1f8a4c" stroke="#fff" stroke-width=".8"/><text y="1.5" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="4" font-weight="900" letter-spacing=".3" fill="#fff" text-anchor="middle">COMPLETE ✓</text></g></g>
+                  </g>
+                  <g font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="3.6" font-weight="800" text-anchor="middle"><g transform="rotate(-20 254 178) translate(254 108)"><rect x="-12" y="-17" width="24" height="34" rx="3.4" fill="#f2cf2e" stroke="#000" stroke-opacity=".35" stroke-width="1.1"/><rect x="-12" y="-17" width="24" height="34" rx="3.4" fill="url(#ir-sheen)"/><g transform="translate(0 -3) scale(1.15)"><path d="M0 -4L1.2 -1.3L4 -1.2L1.8 .7L2.5 3.5L0 1.9L-2.5 3.5L-1.8 .7L-4 -1.2L-1.2 -1.3Z" fill="#2a2300"/></g><text y="11" fill="#2a2300">YELLOW</text></g><g class="ir-fly" style="--d:.18s"><g transform="rotate(-10 254 178) translate(254 108)"><rect x="-12" y="-17" width="24" height="34" rx="3.4" fill="#2f6fdb" stroke="#000" stroke-opacity=".35" stroke-width="1.1"/><rect x="-12" y="-17" width="24" height="34" rx="3.4" fill="url(#ir-sheen)"/><circle cy="-3" r="4.6" fill="#fff"/><text y="11" fill="#fff">BLUE</text></g></g><g class="ir-fly" style="--d:.12s"><g transform="rotate(0 254 178) translate(254 108)"><rect x="-12" y="-17" width="24" height="34" rx="3.4" fill="#2f6fdb" stroke="#000" stroke-opacity=".35" stroke-width="1.1"/><rect x="-12" y="-17" width="24" height="34" rx="3.4" fill="url(#ir-sheen)"/><circle cy="-3" r="4.6" fill="#fff"/><text y="11" fill="#fff">BLUE</text></g></g><g class="ir-fly" style="--d:.06s"><g transform="rotate(10 254 178) translate(254 108)"><rect x="-12" y="-17" width="24" height="34" rx="3.4" fill="#2f6fdb" stroke="#000" stroke-opacity=".35" stroke-width="1.1"/><rect x="-12" y="-17" width="24" height="34" rx="3.4" fill="url(#ir-sheen)"/><circle cy="-3" r="4.6" fill="#fff"/><text y="11" fill="#fff">BLUE</text></g></g><g class="ir-fly" style="--d:0s"><g transform="rotate(20 254 178) translate(254 108)"><rect x="-12" y="-17" width="24" height="34" rx="3.4" fill="url(#ir-loco)" stroke="#000" stroke-opacity=".35" stroke-width="1.1"/><rect x="-12" y="-17" width="24" height="34" rx="3.4" fill="url(#ir-sheen)"/><g transform="translate(0 -3) scale(1.15)"><path d="M0 -4V4M-3.5 -2L3.5 2M-3.5 2L3.5 -2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></g><text y="11" fill="#fff">LOCO</text></g></g></g>
+                </svg>
+              </div>
+            <div class="game-copy">
+              <div><h3>Iron Routes</h3><p>Claim rail lines across the continent, link your secret destinations, and lay the longest track.</p></div>
+              <span class="play-arrow" aria-hidden="true">↗</span>
+              <div class="game-meta"><span>2–5 players</span><span>Strategy</span><span>Touch ready</span></div>
+            </div>
+          </div>
+      </div>
+      <div class="lobby-grid">
+        <form id="create" class="panel setup">
+          <input type="hidden" id="game" value="dots_and_boxes">
+          <div class="setup-head">
+            <p class="eyebrow" id="setup-kicker">Strategy</p>
+            <h2 id="setup-title">Boxed In</h2>
+            <p class="rules" id="setup-rules"></p>
+          </div>
+          <div class="field" id="size-field">
+            <span class="field-label" id="size-label">Board size</span>
+            <div class="segments" id="size-options" role="radiogroup" aria-labelledby="size-label"></div>
+          </div>
+          <div class="field" id="level-field" hidden>
+            <span class="field-label" id="level-label">Table size</span>
+            <div class="segments" id="level-options" role="radiogroup" aria-labelledby="level-label"></div>
+          </div>
+          <p class="field-note" id="no-options">No settings for this game. Create the room and share the invite.</p>
+          <button class="primary" id="create-button">Create room</button>
+          <p id="room-stats" role="status" hidden></p>
+          <details class="owner">
+            <summary>Owner key</summary>
+            <label class="sr-only" for="owner-key">Owner key</label>
+            <input id="owner-key" type="password" autocomplete="off" placeholder="Optional owner key">
+          </details>
+        </form>
+        <div class="panel join-panel">
+          <form id="join">
+            <h2>Have a code?</h2>
+            <p class="rules">Enter the five-character room code your friend shared.</p>
+            <label for="code">Room code</label>
+            <input id="code" required maxlength="5" autocapitalize="characters" autocomplete="off" placeholder="5-character code">
+            <button>Join room</button>
+          </form>
         </div>
-        <button class="primary">Create room</button>
-        <details>
-          <summary>Owner key</summary>
-          <label class="sr-only" for="owner-key">Owner key</label>
-          <input id="owner-key" type="password" autocomplete="off" placeholder="Optional owner key">
-        </details>
-      </form>
-      <form id="join">
-        <label for="code">Room code</label>
-        <input id="code" required maxlength="5" autocapitalize="characters" autocomplete="off" placeholder="5-character code">
-        <button>Join room</button>
-      </form>
+      </div>
     </div>
     <form id="invite" hidden><button class="primary">Join game</button></form>
   </section>
   <div id="room" class="layout" hidden>
     <section class="game">
-      <div class="room-bar">
-        <strong id="room-code"></strong>
-        <button id="copy">Copy invite link</button>
-        <details id="share"><summary>QR code</summary><div id="qr"></div></details>
-      </div>
       <div id="players" class="players"></div>
       <p id="turn" role="status"></p>
-      <div id="paper" class="paper" hidden><div id="board" aria-label="Dots and Boxes board" role="group"></div></div>
+      <div id="paper" class="paper" hidden><div id="board" aria-label="Board" role="group"></div></div>
       <div class="actions">
         <button id="go-pass" hidden>Pass</button>
         <button id="go-resign" hidden>Resign</button>
         <button id="start" class="primary" hidden>Start game</button>
+        <button id="end" hidden>End game</button>
         <button id="leave" hidden>Leave room</button>
         <button id="claim" hidden>Claim host</button>
         <select id="remove-player" aria-label="Player to remove" hidden></select>
@@ -67,11 +288,19 @@
       </div>
       <p class="rules" id="rules"></p>
     </section>
-    <details class="chat" id="chat-panel" open>
-      <summary id="chat-summary">Room chat</summary>
-      <ol id="messages" aria-live="polite"></ol>
-      <form id="chat"><label for="message" class="sr-only">Message</label><input id="message" maxlength="280" placeholder="Write a message…" required><button>Send</button></form>
-    </details>
+    <aside class="side">
+      <section class="share" aria-labelledby="share-title">
+        <h2 id="share-title">Invite a friend</h2>
+        <div id="qr"></div>
+        <p class="share-code">Room code <strong id="room-code"></strong></p>
+        <button id="copy">Copy invite link</button>
+      </section>
+      <details class="chat" id="chat-panel" open>
+        <summary id="chat-summary">Room chat</summary>
+        <ol id="messages" aria-live="polite"></ol>
+        <form id="chat"><label for="message" class="sr-only">Message</label><input id="message" maxlength="280" placeholder="Write a message…" required><button>Send</button></form>
+      </details>
+    </aside>
   </div>
 </main>
 </body>

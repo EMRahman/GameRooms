@@ -14,8 +14,9 @@ export class GameRoom extends DurableObject {
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"t":"ping","v":1}', '{"t":"pong","v":1}'));
   }
 
-  async initialize(clientId, game, options) {
+  async initialize(clientId, game, options, code) {
     if (this.room) return false;
+    this.storage.kv.put('code', code);
     this.sql.exec('CREATE TABLE IF NOT EXISTS moves (round INTEGER, seq INTEGER, seat INTEGER, data TEXT, PRIMARY KEY (round, seq))');
     this.sql.exec('CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY, seat INTEGER, name TEXT, text TEXT, ts INTEGER)');
     const seats = Array(maxSeats(game)).fill(null);
@@ -74,6 +75,16 @@ export class GameRoom extends DurableObject {
 
   roster(room) {
     this.broadcast({ t: 'players', hostSeat: room.hostSeat, players: this.players(room) });
+    void this.syncLive().catch(() => {});
+  }
+
+  // Keeps the budget's count of rooms in use in step with whether anyone is seated and connected.
+  async syncLive() {
+    const code = this.storage.kv.get('code');
+    const live = this.seated().length > 0;
+    if (!code || !this.env.BUDGET || live === Boolean(this.storage.kv.get('live'))) return;
+    this.storage.kv.put('live', live);
+    await this.env.BUDGET.getByName('rooms').setLive(code, live);
   }
 
   fetch() {
@@ -116,18 +127,15 @@ export class GameRoom extends DurableObject {
             (msg.t === 'start') !== (room.phase === 'lobby')) return error('bad_request');
         const rules = authoritative[room.game];
         if (rules && msg.t === 'rematch' && !rules.finished(room.state)) return error('bad_request');
-        room.roundSeats = roster;
-        room.phase = 'playing';
-        room.round++;
-        room.seq = 0;
-        room.seed = rules ? null : crypto.getRandomValues(new Uint32Array(1))[0];
-        if (rules) room.state = rules.make(roster);
-        this.room = room;
-        const started = { t: 'started', round: room.round, seed: room.seed, options: room.options, roundSeats: room.roundSeats, players: this.players(room) };
-        if (rules) this.sendViews(room, started);
-        else this.broadcast(started);
+        this.startRound(room, roster);
         break;
       }
+      case 'end':
+        if (room.phase !== 'playing') return error('bad_request');
+        this.endRound(room);
+        this.room = room;
+        this.broadcast({ t: 'ended' });
+        break;
       case 'move': {
         if (room.phase !== 'playing') return error('bad_request');
         const rules = authoritative[room.game];
@@ -170,14 +178,18 @@ export class GameRoom extends DurableObject {
         this.broadcast({ t: 'chat', id, seat, name, text, ts });
         break;
       }
-      case 'leave':
-        if (room.phase !== 'lobby') return error('bad_request');
+      case 'leave': {
+        // Leaving mid-game ends the game for everyone still here.
+        const ending = room.phase === 'playing';
+        if (ending) this.endRound(room);
         room.seats[seat] = null;
         if (host) room.hostSeat = connected.find(player => player.seat !== seat)?.seat ?? room.seats.findIndex(Boolean);
         this.room = room;
+        if (ending) this.broadcast({ t: 'ended' });
         ws.close(4000, 'Left room');
         this.roster(room);
         break;
+      }
       case 'kick':
       case 'vacate': {
         const target = msg.seat;
@@ -203,6 +215,29 @@ export class GameRoom extends DurableObject {
     await this.storage.setAlarm(Date.now() + (this.seated().length ? 48 : 24) * hour);
   }
 
+  // Begins a round for the given seats. Games with authoritative state get per-seat views.
+  startRound(room, roster) {
+    const rules = authoritative[room.game];
+    room.roundSeats = roster;
+    room.phase = 'playing';
+    room.round++;
+    room.seq = 0;
+    room.seed = rules ? null : crypto.getRandomValues(new Uint32Array(1))[0];
+    if (rules) room.state = rules.make(roster);
+    this.room = room;
+    const started = { t: 'started', round: room.round, seed: room.seed, options: room.options, roundSeats: room.roundSeats, players: this.players(room) };
+    if (rules) this.sendViews(room, started);
+    else this.broadcast(started);
+  }
+
+  // Returns a room to its lobby. Seats stay filled; the next round uses whoever is seated.
+  endRound(room) {
+    room.phase = 'lobby';
+    room.seed = null;
+    delete room.roundSeats;
+    delete room.state;
+  }
+
   async join(ws, room, msg) {
     if (room.blocked.includes(msg.clientId)) return ws.close(4003, 'Removed by host');
     let seat = room.seats.findIndex(player => player?.clientId === msg.clientId);
@@ -218,13 +253,20 @@ export class GameRoom extends DurableObject {
     this.room = room;
     ws.serializeAttachment({ seat, clientId: msg.clientId, lastChatAt: old?.deserializeAttachment().lastChatAt ?? 0 });
     old?.close(4001, 'Connected elsewhere');
-    const log = this.sql.exec('SELECT seq, seat, data FROM moves WHERE round = ? ORDER BY seq', room.round)
-      .toArray().map(move => ({ ...move, data: JSON.parse(move.data) }));
+    // Moves belong to a round; a lobby has none to replay.
+    const log = room.phase === 'playing'
+      ? this.sql.exec('SELECT seq, seat, data FROM moves WHERE round = ? ORDER BY seq', room.round)
+        .toArray().map(move => ({ ...move, data: JSON.parse(move.data) }))
+      : [];
     const chat = this.sql.exec('SELECT * FROM chat ORDER BY id DESC LIMIT 100').toArray().reverse();
     const view = room.state ? authoritative[room.game].view(room.state, seat) : undefined;
     send(ws, { t: 'welcome', view, game: room.game, phase: room.phase, round: room.round, seq: room.seq, seed: room.seed, options: room.options, seat,
       hostSeat: room.hostSeat, maxSeats: room.seats.length, roundSeats: room.roundSeats, players: this.players(room), log, chat });
     this.roster(room);
+    // Two-seat games start as soon as the second player is connected. Larger games wait for the host.
+    const filled = room.seats.flatMap((player, index) => player ? [index] : []);
+    const connectedCount = this.players(room).filter(player => player.connected).length;
+    if (room.phase === 'lobby' && room.seats.length === 2 && filled.length === 2 && connectedCount === 2) this.startRound(room, filled);
     await this.storage.setAlarm(Date.now() + 48 * hour);
   }
 
@@ -242,6 +284,9 @@ export class GameRoom extends DurableObject {
   webSocketError(ws) { return this.webSocketClose(ws); }
 
   async alarm() {
+    if (this.storage.kv.get('live') && this.env.BUDGET) {
+      await this.env.BUDGET.getByName('rooms').setLive(this.storage.kv.get('code'), false);
+    }
     for (const ws of this.sockets()) ws.close(4004, 'Room expired');
     await this.storage.deleteAll();
   }
