@@ -6,7 +6,8 @@ import { drawGo } from './go-board.js';
 import { MEMORY_LEVELS, makeMemoryBoard, flipCard, memoryWinner } from './memory-rules.js';
 import { drawMemory } from './memory-board.js';
 import { drawNorthstar } from './northstar-board.js';
-import { drawIronRoutes } from './iron-routes-board.js';
+import { drawIronRoutes, drawMapPreview } from './iron-routes-board.js';
+import { MAPS, MAP_IDS, DEFAULT_MAP } from './iron-routes-rules.js';
 import { ROUND_CHOICES } from './landlord-rules.js';
 import { drawLandlord } from './landlord-board.js';
 import { ROUND_CHOICES as CONQUEST_ROUNDS } from './conquest-rules.js';
@@ -80,8 +81,15 @@ const games = {
     title: 'Iron Routes',
     players: '2–5 players',
     subtitle: 'Railway building · 2–5 players',
-    rules: 'Each turn, draw two train cards, claim a route with matching cards, or take destination tickets. Finished tickets score; unfinished ones cost their value. The longest line earns 12 points.',
+    rules: 'Each turn, draw two train cards, claim a route with matching cards, take destination tickets, or build a station that borrows a rival’s track. Dashed tunnels can cost extra cards. Finished tickets score; unfinished ones cost their value. The longest line earns 12 points.',
     authoritative: true,
+    setting: {
+      key: 'map', label: 'Map', fallback: DEFAULT_MAP,
+      choices: MAP_IDS.map(id => [MAPS[id].name, id]),
+      // Each map choice shows a small preview above its name.
+      decorate: (button, id) => button.prepend(drawMapPreview(id)),
+      className: 'map-options',
+    },
     result: view => view.over ? view.winner : undefined,
     status: (view, seat) => !view.setup ? undefined
       : view.me?.pending.length ? 'Choose your starting tickets' : 'Waiting for others to choose tickets',
@@ -115,15 +123,16 @@ const games = {
 
 const pageGame = location.pathname.split('/').pop().replace(/\.html$/, '');
 // The chosen size and table are remembered per page visit; each game falls back to its first option.
-const chosen = { size: games.dots_and_boxes.sizes[0], level: Object.keys(MEMORY_LEVELS)[0], rounds: 25 };
+const chosen = { size: games.dots_and_boxes.sizes[0], level: Object.keys(MEMORY_LEVELS)[0], rounds: 25, map: DEFAULT_MAP };
 
-function pickOption(container, options, value, onPick) {
+function pickOption(container, options, value, onPick, decorate) {
   container.replaceChildren(...options.map(([label, option]) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.setAttribute('role', 'radio');
     button.setAttribute('aria-checked', String(option === value));
     button.textContent = label;
+    decorate?.(button, option);
     button.onclick = () => {
       onPick(option);
       renderSetup();
@@ -149,7 +158,8 @@ function renderSetup() {
     // Games can share a setting key (Landlord and Conquest both use `rounds`) with different choices.
     if (!setting.choices.some(([, option]) => option === chosen[setting.key])) chosen[setting.key] = setting.fallback ?? setting.choices[0][1];
     $('level-label').textContent = setting.label;
-    pickOption($('level-options'), setting.choices, chosen[setting.key], value => { chosen[setting.key] = value; });
+    $('level-options').className = `segments ${setting.className ?? ''}`.trim();
+    pickOption($('level-options'), setting.choices, chosen[setting.key], value => { chosen[setting.key] = value; }, setting.decorate);
   }
   $('no-options').hidden = Boolean(meta.sizes || setting);
 }

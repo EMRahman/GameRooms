@@ -4,6 +4,7 @@ import { GO_SIZES, goMoveData } from '../public/go-rules.js';
 import { MEMORY_LEVELS, validFlip } from '../public/memory-rules.js';
 import { ROUND_CHOICES } from '../public/landlord-rules.js';
 import { ROUND_CHOICES as CONQUEST_ROUNDS } from '../public/conquest-rules.js';
+import { MAP_IDS, DEFAULT_MAP } from '../public/iron-routes-rules.js';
 
 import { authoritative } from './authoritative.js';
 
@@ -15,7 +16,11 @@ export const maxSeats = game => ({ memory_match: 5, iron_routes: 5, landlord: 6,
 export const clientIdValid = id => typeof id === 'string' && /^[a-f0-9-]{36}$/i.test(id);
 
 export function roomOptions(game, options) {
-  if (game === 'fourfold' || game === 'northstar' || game === 'iron_routes') return {};
+  if (game === 'fourfold' || game === 'northstar') return {};
+  if (game === 'iron_routes') {
+    const map = options?.map ?? DEFAULT_MAP;
+    return MAP_IDS.includes(map) ? { map } : null;
+  }
   if (game === 'landlord') {
     const rounds = options?.rounds ?? 25;
     return ROUND_CHOICES.includes(rounds) ? { rounds } : null;
