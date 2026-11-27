@@ -23,7 +23,7 @@ These eight games come from the original [Side Quest arcade](https://emrahman.gi
 | **Go** | 2 | Surround territory on a shared board. |
 | **Memory Match** | 2–5 | Find matching pairs. |
 | **Northstar** | 2 | Find and sink your opponent’s fleet. |
-| **Iron Routes** | 2–5 | Build a rail network and compete for points. |
+| **Iron Routes** | 2–5 | Build a rail network across North America, Europe, Asia, or South America, with tunnels and stations. |
 | **Landlord** | 2–6 | Trade properties and compete for wealth. |
 | **Conquest** | 2–6 | Vie for control of the map. |
 
