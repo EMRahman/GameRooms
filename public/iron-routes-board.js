@@ -1,5 +1,5 @@
 import {
-  MAPS, POINTS, LONGEST_BONUS, CARD_KINDS, STATION_LIMIT, STATION_POINTS, ironMap,
+  MAPS, POINTS, LONGEST_BONUS, CARD_KINDS, STATION_LIMIT, STATION_POINTS, ironMap, routePoints, pathLength,
   payOptions, claimProblem, twinBlocked, canTakeMarket, ticketConnections,
   tunnelExtra, tunnelPayments, stationPayments, stationsBuilt,
 } from './iron-routes-rules.js';
@@ -58,7 +58,7 @@ function payLabel(option) {
   return parts.join(' + ');
 }
 
-// Sea, graticule, land, inland seas, lakes and borders of one map.
+// Sea, graticule, neighbouring countries, land, inland seas, lakes and borders of one map.
 function drawTerrain(target, data) {
   const pts = list => list.map(([lon, lat]) => data.proj(lon, lat).join(',')).join(' ');
   const base = svgEl('g', { 'aria-hidden': 'true' }, target);
@@ -72,6 +72,7 @@ function drawTerrain(target, data) {
     const [, y] = data.proj(0, lat);
     svgEl('line', { class: 'grat', x1: -1000, y1: y, x2: 2000, y2: y }, base);
   }
+  for (const land of data.abroad ?? []) svgEl('polygon', { class: 'abroad', points: pts(land) }, base);
   for (const land of data.land) svgEl('polygon', { class: 'land', points: pts(land) }, base);
   for (const sea of data.seas) svgEl('polygon', { class: 'sea', points: pts(sea) }, base);
   for (const lake of data.lakes) svgEl('polygon', { class: 'lake', points: pts(lake) }, base);
@@ -86,34 +87,64 @@ export function drawMapPreview(id) {
   drawTerrain(svg, data);
   const cities = Object.fromEntries(Object.entries(data.cities).map(([key, [, lon, lat]]) => [key, data.proj(lon, lat)]));
   for (const [a, b, color] of data.routes) {
-    const [x1, y1] = cities[a];
-    const [x2, y2] = cities[b];
-    svgEl('line', { class: 'track', x1, y1, x2, y2, stroke: CARD[color].c }, svg);
+    svgEl('path', { class: 'track', d: pathD(routePoints(data, a, b)), stroke: CARD[color].c }, svg);
   }
   for (const [cx, cy] of Object.values(cities)) svgEl('circle', { class: 'stop', cx, cy, r: 6 }, svg);
   return svg;
 }
 
-function routeGeometry(map, route) {
-  const A = map.cities[route.a];
-  const B = map.cities[route.b];
-  const dx = B.x - A.x;
-  const dy = B.y - A.y;
-  const length = Math.hypot(dx, dy);
-  const [ux, uy] = [dx / length, dy / length];
-  const [ox, oy] = [-uy * route.side * 5.5, ux * route.side * 5.5];
+// Shifts a polyline sideways by `off`, mitring the corners so twin tracks stay parallel.
+function offsetPath(points, off) {
+  if (!off) return points;
+  const normal = (p, q) => {
+    const length = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    return [-(q[1] - p[1]) / length, (q[0] - p[0]) / length];
+  };
+  return points.map((p, i) => {
+    const n1 = i > 0 ? normal(points[i - 1], p) : null;
+    const n2 = i < points.length - 1 ? normal(p, points[i + 1]) : null;
+    if (!n1 || !n2) {
+      const n = n1 ?? n2;
+      return [p[0] + n[0] * off, p[1] + n[1] * off];
+    }
+    const k = off / (1 + n1[0] * n2[0] + n1[1] * n2[1]);
+    return [p[0] + (n1[0] + n2[0]) * k, p[1] + (n1[1] + n2[1]) * k];
+  });
+}
+
+// The part of a polyline between distances s0 and s1 from its start.
+function slicePath(points, s0, s1) {
+  const out = [];
+  let travelled = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[i + 1];
+    const length = Math.hypot(x2 - x1, y2 - y1);
+    const from = Math.max(s0, travelled);
+    const to = Math.min(s1, travelled + length);
+    if (to > from) {
+      const at = s => [x1 + (x2 - x1) * (s - travelled) / length, y1 + (y2 - y1) * (s - travelled) / length];
+      if (!out.length) out.push(at(from));
+      out.push(at(to));
+    }
+    travelled += length;
+  }
+  return out;
+}
+
+const pathD = points => points.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join('');
+
+function routeGeometry(route) {
+  const points = offsetPath(route.pts, route.side * 5.5);
   const trim = 9;
   const gap = 2.2;
-  const car = (length - trim * 2 - gap * (route.len - 1)) / route.len;
+  const car = (pathLength(points) - trim * 2 - gap * (route.len - 1)) / route.len;
   let cars = '';
   for (let i = 0; i < route.len; i++) {
     const start = trim + i * (car + gap);
-    const x = A.x + ox + ux * start;
-    const y = A.y + oy + uy * start;
-    cars += `M${x.toFixed(1)} ${y.toFixed(1)}L${(x + ux * car).toFixed(1)} ${(y + uy * car).toFixed(1)}`;
+    cars += pathD(slicePath(points, start, start + car));
   }
-  const line = `M${(A.x + ox).toFixed(1)} ${(A.y + oy).toFixed(1)}L${(B.x + ox).toFixed(1)} ${(B.y + oy).toFixed(1)}`;
-  return { cars, line };
+  return { cars, line: pathD(points) };
 }
 
 export function drawIronRoutes(container, seat, submit, nameOf) {
@@ -137,8 +168,8 @@ export function drawIronRoutes(container, seat, submit, nameOf) {
   const mapWrap = html('div', 'iron-map');
   const svg = svgEl('svg', { role: 'group', 'aria-label': 'Railway map' });
 
-  function buildMap(id) {
-    map = ironMap(id);
+  function buildMap(id, rev) {
+    map = ironMap(id, rev);
     FULL = { ...map.data.full };
     selected = -1;
     highlighted = -1;
@@ -150,7 +181,7 @@ export function drawIronRoutes(container, seat, submit, nameOf) {
     const routeLayer = svgEl('g', {}, svg);
     routeNodes = map.routes.map(route => {
       const group = svgEl('g', { class: 'route' }, routeLayer);
-      const { cars, line } = routeGeometry(map, route);
+      const { cars, line } = routeGeometry(route);
       svgEl('path', { class: 'out', d: cars }, group);
       const carPath = svgEl('path', { class: 'car', d: cars, stroke: CARD[route.c].c }, group);
       const bore = route.tunnel ? svgEl('path', { class: 'bore', d: cars }, group) : null;
@@ -634,7 +665,7 @@ export function drawIronRoutes(container, seat, submit, nameOf) {
   function paint() {
     if (!last?.view) return;
     const { view, canMove, active } = last;
-    if (map?.id !== view.map) buildMap(view.map);
+    if (map?.id !== view.map || map.rev !== view.rev) buildMap(view.map, view.rev);
     const myTurn = canMove && view.turn === seat;
     if (!myTurn || view.phase !== 'turn' || !view.stations) stationCity = null;
     const done = view.me ? ticketConnections(map, view.owner, view.stations, seat, view.me.tickets).done : new Set();
