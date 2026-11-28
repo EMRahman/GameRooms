@@ -147,70 +147,45 @@ function routeGeometry(route) {
   return { cars, line: pathD(points) };
 }
 
-export function drawIronRoutes(container, seat, submit, nameOf) {
-  let map = null;
+// Draws a built map's terrain, tracks and labelled cities into `svg`.
+function drawNetwork(svg, map) {
+  svg.style.aspectRatio = `${map.data.full.w} / ${map.data.full.h}`;
+  drawTerrain(svg, map.data);
+  const routeLayer = svgEl('g', {}, svg);
+  const routeNodes = map.routes.map(route => {
+    const group = svgEl('g', { class: 'route' }, routeLayer);
+    const { cars, line } = routeGeometry(route);
+    svgEl('path', { class: 'out', d: cars }, group);
+    const carPath = svgEl('path', { class: 'car', d: cars, stroke: CARD[route.c].c }, group);
+    const bore = route.tunnel ? svgEl('path', { class: 'bore', d: cars }, group) : null;
+    const hit = svgEl('path', { class: 'hit', d: line, 'data-route': route.id }, group);
+    const title = svgEl('title', {}, hit);
+    return { group, carPath, bore, title };
+  });
+  const cityLayer = svgEl('g', {}, svg);
+  const cityNodes = Object.fromEntries(Object.entries(map.cities).map(([key, city]) => {
+    const group = svgEl('g', { class: 'city' }, cityLayer);
+    svgEl('circle', { class: 'stop', cx: city.x, cy: city.y, r: 6 }, group);
+    const station = svgEl('path', {
+      class: 'station', d: 'M-7 -1L0 -7L7 -1V6H-7Z M-2 6V1H2V6', transform: `translate(${city.x} ${city.y})`,
+    }, group);
+    station.style.display = 'none';
+    const side = city[3];
+    const label = svgEl('text', {
+      x: city.x + (side === 'l' ? -10 : side === 'r' ? 10 : 0),
+      y: city.y + (side === 't' ? -11 : side === 'b' ? 19 : 4),
+      'text-anchor': side === 'l' ? 'end' : side === 'r' ? 'start' : 'middle',
+    }, group);
+    label.textContent = city[0];
+    return [key, { group, station }];
+  }));
+  return { routeNodes, cityNodes };
+}
+
+// Pan and zoom for a map `svg`, added to `wrap` with its zoom buttons. While fully zoomed out,
+// touch scrolls the page instead of the map. `dragged()` says whether the last press was a drag.
+function panZoom(svg, wrap) {
   let FULL = { x: 0, y: 0, w: 1, h: 1 };
-  let selected = -1;
-  let highlighted = -1;
-  // null when not building a station, '' while picking a city, otherwise the chosen city.
-  let stationCity = null;
-  let picks = new Set();
-  let pickKey = '';
-  let last = null;
-  let routeNodes = [];
-  let cityNodes = {};
-
-  const cityName = key => map.cities[key][0];
-  const routeName = route => `${cityName(route.a)}–${cityName(route.b)}`;
-  const ticketName = ticket => `${cityName(ticket.a)} → ${cityName(ticket.b)}`;
-
-  // ---------- Map ----------
-  const mapWrap = html('div', 'iron-map');
-  const svg = svgEl('svg', { role: 'group', 'aria-label': 'Railway map' });
-
-  function buildMap(id, rev) {
-    map = ironMap(id, rev);
-    FULL = { ...map.data.full };
-    selected = -1;
-    highlighted = -1;
-    stationCity = null;
-    svg.replaceChildren();
-    svg.setAttribute('aria-label', `Railway map of ${map.name}`);
-    svg.style.aspectRatio = `${FULL.w} / ${FULL.h}`;
-    drawTerrain(svg, map.data);
-    const routeLayer = svgEl('g', {}, svg);
-    routeNodes = map.routes.map(route => {
-      const group = svgEl('g', { class: 'route' }, routeLayer);
-      const { cars, line } = routeGeometry(route);
-      svgEl('path', { class: 'out', d: cars }, group);
-      const carPath = svgEl('path', { class: 'car', d: cars, stroke: CARD[route.c].c }, group);
-      const bore = route.tunnel ? svgEl('path', { class: 'bore', d: cars }, group) : null;
-      const hit = svgEl('path', { class: 'hit', d: line, 'data-route': route.id }, group);
-      const title = svgEl('title', {}, hit);
-      return { group, carPath, bore, title };
-    });
-    const cityLayer = svgEl('g', {}, svg);
-    cityNodes = Object.fromEntries(Object.entries(map.cities).map(([key, city]) => {
-      const group = svgEl('g', { class: 'city' }, cityLayer);
-      svgEl('circle', { class: 'stop', cx: city.x, cy: city.y, r: 6 }, group);
-      const station = svgEl('path', {
-        class: 'station', d: 'M-7 -1L0 -7L7 -1V6H-7Z M-2 6V1H2V6', transform: `translate(${city.x} ${city.y})`,
-      }, group);
-      station.style.display = 'none';
-      const side = city[3];
-      const label = svgEl('text', {
-        x: city.x + (side === 'l' ? -10 : side === 'r' ? 10 : 0),
-        y: city.y + (side === 't' ? -11 : side === 'b' ? 19 : 4),
-        'text-anchor': side === 'l' ? 'end' : side === 'r' ? 'start' : 'middle',
-      }, group);
-      label.textContent = city[0];
-      return [key, { group, station }];
-    }));
-    frame = { ...FULL };
-    applyFrame();
-  }
-
-  // Pan and zoom. While fully zoomed out, touch scrolls the page instead of the map.
   let frame = { ...FULL };
   let dragged = false;
   let gesture = null;
@@ -221,7 +196,7 @@ export function drawIronRoutes(container, seat, submit, nameOf) {
     frame.x = Math.max(FULL.x - frame.w * 0.25, Math.min(FULL.x + FULL.w - frame.w * 0.75, frame.x));
     frame.y = Math.max(FULL.y - frame.h * 0.25, Math.min(FULL.y + FULL.h - frame.h * 0.75, frame.y));
     if (frame.w >= FULL.w) frame = { ...FULL };
-    mapWrap.classList.toggle('zoomed', frame.w < FULL.w);
+    wrap.classList.toggle('zoomed', frame.w < FULL.w);
     svg.setAttribute('viewBox', `${frame.x.toFixed(1)} ${frame.y.toFixed(1)} ${frame.w.toFixed(1)} ${frame.h.toFixed(1)}`);
   }
   function toMap(clientX, clientY) {
@@ -293,6 +268,80 @@ export function drawIronRoutes(container, seat, submit, nameOf) {
     event.preventDefault();
     zoomAt(event.clientX, event.clientY, event.deltaY > 0 ? 1.15 : 1 / 1.15);
   }, { passive: false });
+  const zoom = html('div', 'iron-zoom');
+  zoom.append(
+    button('', '+', () => zoomCentre(1 / 1.4)),
+    button('', '−', () => zoomCentre(1.4)),
+    button('', 'Fit', () => { frame = { ...FULL }; applyFrame(); }),
+  );
+  zoom.children[0].setAttribute('aria-label', 'Zoom in');
+  zoom.children[1].setAttribute('aria-label', 'Zoom out');
+  wrap.append(svg, zoom);
+  return {
+    // Shows the whole of a map whose full extent is `full`.
+    show(full) {
+      FULL = { ...full };
+      frame = { ...FULL };
+      applyFrame();
+    },
+    dragged() {
+      const was = dragged;
+      dragged = false;
+      return was;
+    },
+  };
+}
+
+// A full-size view of a map with city names, panned and zoomed like the board, for the room setup sheet.
+export function mapPeek() {
+  const element = html('div', 'iron-map iron-peek');
+  const svg = svgEl('svg', { role: 'img' });
+  const zoomer = panZoom(svg, element);
+  return {
+    element,
+    show(id) {
+      const map = ironMap(id);
+      svg.replaceChildren();
+      svg.setAttribute('aria-label', `Railway map of ${map.name}`);
+      element.style.setProperty('--ar', (map.data.full.w / map.data.full.h).toFixed(4));
+      drawNetwork(svg, map);
+      zoomer.show(map.data.full);
+    },
+  };
+}
+
+export function drawIronRoutes(container, seat, submit, nameOf) {
+  let map = null;
+  let selected = -1;
+  let highlighted = -1;
+  // null when not building a station, '' while picking a city, otherwise the chosen city.
+  let stationCity = null;
+  let picks = new Set();
+  let pickKey = '';
+  let last = null;
+  let routeNodes = [];
+  let cityNodes = {};
+
+  const cityName = key => map.cities[key][0];
+  const routeName = route => `${cityName(route.a)}–${cityName(route.b)}`;
+  const ticketName = ticket => `${cityName(ticket.a)} → ${cityName(ticket.b)}`;
+
+  // ---------- Map ----------
+  const mapWrap = html('div', 'iron-map');
+  const svg = svgEl('svg', { role: 'group', 'aria-label': 'Railway map' });
+
+  function buildMap(id, rev) {
+    map = ironMap(id, rev);
+    selected = -1;
+    highlighted = -1;
+    stationCity = null;
+    svg.replaceChildren();
+    svg.setAttribute('aria-label', `Railway map of ${map.name}`);
+    ({ routeNodes, cityNodes } = drawNetwork(svg, map));
+    zoomer.show(map.data.full);
+  }
+
+  const zoomer = panZoom(svg, mapWrap);
 
   // The nearest visible city within a touch-sized square of the tap, so crowded cities stay pickable.
   function cityAt(clientX, clientY) {
@@ -314,7 +363,7 @@ export function drawIronRoutes(container, seat, submit, nameOf) {
   }
 
   svg.addEventListener('click', event => {
-    if (dragged) { dragged = false; return; }
+    if (zoomer.dragged()) return;
     if (!map || last?.view.phase === 'tunnel') return;
     if (stationCity !== null) {
       const city = cityAt(event.clientX, event.clientY);
@@ -329,15 +378,6 @@ export function drawIronRoutes(container, seat, submit, nameOf) {
     const id = hit ? Number(hit.dataset.route) : -1;
     select(id === selected ? -1 : id);
   });
-  const zoom = html('div', 'iron-zoom');
-  zoom.append(
-    button('', '+', () => zoomCentre(1 / 1.4)),
-    button('', '−', () => zoomCentre(1.4)),
-    button('', 'Fit', () => { frame = { ...FULL }; applyFrame(); }),
-  );
-  zoom.children[0].setAttribute('aria-label', 'Zoom in');
-  zoom.children[1].setAttribute('aria-label', 'Zoom out');
-  mapWrap.append(svg, zoom);
 
   // ---------- Panel ----------
   const banner = html('p', 'iron-banner');

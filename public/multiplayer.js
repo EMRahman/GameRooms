@@ -6,7 +6,7 @@ import { drawGo } from './go-board.js';
 import { MEMORY_LEVELS, makeMemoryBoard, flipCard, memoryWinner } from './memory-rules.js';
 import { drawMemory } from './memory-board.js';
 import { drawNorthstar } from './northstar-board.js';
-import { drawIronRoutes, drawMapPreview } from './iron-routes-board.js';
+import { drawIronRoutes, drawMapPreview, mapPeek } from './iron-routes-board.js';
 import { MAPS, MAP_IDS, DEFAULT_MAP } from './iron-routes-rules.js';
 import { ROUND_CHOICES } from './landlord-rules.js';
 import { drawLandlord } from './landlord-board.js';
@@ -86,8 +86,8 @@ const games = {
     setting: {
       key: 'map', label: 'Map', fallback: DEFAULT_MAP,
       choices: MAP_IDS.map(id => [MAPS[id].name, id]),
-      // Each map choice shows a small preview above its name.
-      decorate: (button, id) => button.prepend(drawMapPreview(id)),
+      // Each map choice shows a small preview above its name, and a magnifier to see it full size.
+      decorate: decorateMap,
       className: 'map-options',
     },
     result: view => view.over ? view.winner : undefined,
@@ -132,12 +132,12 @@ function pickOption(container, options, value, onPick, decorate) {
     button.setAttribute('role', 'radio');
     button.setAttribute('aria-checked', String(option === value));
     button.textContent = label;
-    decorate?.(button, option);
     button.onclick = () => {
       onPick(option);
       renderSetup();
     };
-    return button;
+    // A decoration may wrap the button, and returns what goes in the list.
+    return decorate?.(button, option) ?? button;
   }));
 }
 
@@ -163,6 +163,52 @@ function renderSetup() {
   }
   $('no-options').hidden = Boolean(meta.sizes || setting);
 }
+
+// ---------- Iron Routes map choices and full-size peek ----------
+const mapStats = data => `${Object.keys(data.cities).length} cities · ${data.trains ?? 40} trains`;
+
+function decorateMap(button, id) {
+  const data = MAPS[id];
+  const stats = document.createElement('small');
+  stats.textContent = mapStats(data);
+  button.prepend(drawMapPreview(id));
+  button.append(stats);
+  const peek = document.createElement('button');
+  peek.type = 'button';
+  peek.className = 'peek-btn';
+  peek.setAttribute('aria-label', `See the ${data.name} map full size`);
+  peek.title = 'See the map full size';
+  peek.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M14.5 14.5L20 20M10 7v6M7 10h6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  peek.onclick = () => openPeek(id);
+  const choice = document.createElement('div');
+  choice.className = 'map-choice';
+  choice.append(button, peek);
+  return choice;
+}
+
+const peekView = mapPeek();
+$('peek-map').replaceWith(peekView.element);
+peekView.element.id = 'peek-map';
+let peekId = DEFAULT_MAP;
+function openPeek(id) {
+  const data = MAPS[id];
+  peekId = id;
+  $('peek-title').textContent = data.name;
+  $('peek-info').textContent = `${mapStats(data)} · ${data.routes.length} routes · ${data.tickets.length} tickets · ${data.blurb}`;
+  $('peek-choose').textContent = id === chosen.map ? 'Use this map' : 'Choose this map';
+  $('map-peek').showModal();
+  peekView.show(id);
+}
+$('peek-choose').onclick = () => {
+  chosen.map = peekId;
+  renderSetup();
+  $('map-peek').close();
+  $('level-options').querySelector(`[aria-checked="true"]`)?.focus();
+};
+$('peek-close').onclick = $('peek-back').onclick = () => $('map-peek').close();
+$('map-peek').onclick = event => {
+  if (event.target === $('map-peek')) $('map-peek').close();
+};
 
 function selectGame(game) {
   $('game').value = game;
