@@ -6,6 +6,7 @@ import {
 } from '../public/iron-routes-rules.js';
 import { roomOptions, messageLimit } from '../worker/protocol.js';
 import { MAPS_V1 } from '../public/iron-routes-maps-v1.js';
+import { MAPS_PRE_TRIM } from '../public/iron-routes-maps-pre-trim.js';
 
 const NA = ironMap('na');
 const ROUTES = NA.routes;
@@ -310,12 +311,11 @@ test('rooms started before tunnels and stations keep the original rules', () => 
   assert.ok(state.over.rows.every(row => row.stationPoints === 0));
 });
 
-test('rooms started before map revision 2 keep the first layout', () => {
+test('rooms keep the map layout they started on', () => {
+  // Rooms from before revisions have no `rev` and keep the first layout.
   for (const id of Object.keys(MAPS_V1)) {
-    assert.equal(MAPS[id].rev, 2, `${id} is on revision 2`);
     const state = makeIronRoutes([0, 1], { map: id });
-    assert.equal(state.rev, 2);
-    assert.equal(ironMap(id).routes.length, ironMap(id, 2).routes.length);
+    assert.equal(state.rev, MAPS[id].rev);
     delete state.rev;
     const view = ironRoutesView(state, 0);
     assert.equal(view.rev, 1);
@@ -323,8 +323,36 @@ test('rooms started before map revision 2 keep the first layout', () => {
     assert.equal(old.data, MAPS_V1[id]);
     assert.equal(old.tickets.length, MAPS_V1[id].tickets.length);
   }
-  assert.equal(makeIronRoutes([0, 1], { map: 'ch' }).rev, 1, 'maps without revisions are revision 1');
-  assert.equal(ironMap('ch', 1).data, MAPS.ch);
+  // Rooms started before every map was trimmed to 20–45 cities keep the untrimmed layout.
+  for (const [id, data] of Object.entries(MAPS_PRE_TRIM)) {
+    const rev = data.rev ?? 1;
+    assert.ok(MAPS[id].rev > rev, `${id} moved to a newer revision`);
+    const state = makeIronRoutes([0, 1], { map: id });
+    assert.equal(state.rev, MAPS[id].rev);
+    assert.equal(state.players[0].trains, MAPS[id].trains ?? 40);
+    state.rev = rev;
+    assert.equal(ironRoutesView(state, 0).rev, rev);
+    const old = ironMap(id, rev);
+    assert.equal(old.data, data);
+    assert.equal(old.trains, 40);
+    assert.ok(old.tickets.every(ticket => Number.isFinite(ticket.pts)), `${id}@${rev} tickets are reachable`);
+    assert.notEqual(ironMap(id).data, data);
+  }
+  assert.equal(ironMap('asia', 1).data, MAPS_V1.asia);
+  assert.equal(ironMap('asia', 2).data, MAPS_PRE_TRIM.asia);
+  assert.equal(ironMap('asia', 3).data, MAPS.asia);
+});
+
+test('every map has 20 to 45 cities and gives each player its own number of trains', () => {
+  for (const id of MAP_IDS) {
+    const count = Object.keys(MAPS[id].cities).length;
+    assert.ok(count >= 20 && count <= 45, `${id} has ${count} cities`);
+    const state = makeIronRoutes([0, 1, 2, 3, 4], { map: id });
+    assert.ok(state.players.every(player => player.trains === (MAPS[id].trains ?? 40)));
+  }
+  assert.deepEqual(['jp', 'de', 'uk'].map(id => MAPS[id].name), ['Japan', 'Germany', 'United Kingdom']);
+  assert.ok(MAPS.me.cities.TLV, 'Tel Aviv is on the Middle East map');
+  assert.equal(makeIronRoutes([0, 1], { map: 'ch' }).players[0].trains, 25);
 });
 
 test('bent routes follow their waypoints and set their length by the map car length', () => {

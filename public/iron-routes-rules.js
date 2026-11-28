@@ -2,6 +2,7 @@
 // The Durable Object owns the state. Browsers receive only ironRoutesView().
 import { MAPS } from './iron-routes-maps.js';
 import { MAPS_V1 } from './iron-routes-maps-v1.js';
+import { MAPS_PRE_TRIM } from './iron-routes-maps-pre-trim.js';
 
 export { MAPS };
 export const MAP_IDS = Object.keys(MAPS);
@@ -25,9 +26,12 @@ export function routePoints(data, a, b) {
 
 export const pathLength = points => points.slice(1).reduce((sum, [x, y], i) => sum + Math.hypot(x - points[i][0], y - points[i][1]), 0);
 
-// The layout a room plays on: rooms keep the revision they started with.
+// The layout a room plays on: rooms keep the revision they started with. Older layouts are
+// kept in archives; maps without `rev` are revision 1.
+const ARCHIVES = [MAPS_V1, MAPS_PRE_TRIM];
 function mapData(id, rev) {
-  return rev === 1 && Object.hasOwn(MAPS_V1, id) ? MAPS_V1[id] : MAPS[id];
+  const old = ARCHIVES.find(archive => Object.hasOwn(archive, id) && (archive[id].rev ?? 1) === rev);
+  return old?.[id] ?? MAPS[id];
 }
 
 // Builds the cities, routes, tickets and adjacency of one map once per process.
@@ -54,7 +58,7 @@ export function ironMap(id, rev) {
   }
   const adj = Object.fromEntries(Object.keys(cities).map(code => [code, []]));
   for (const route of routes) { adj[route.a].push(route); adj[route.b].push(route); }
-  const map = { id: key, rev: data.rev ?? 1, name: data.name, blurb: data.blurb, data, cities, routes, adj, tickets: [] };
+  const map = { id: key, rev: data.rev ?? 1, name: data.name, blurb: data.blurb, trains: data.trains ?? 40, data, cities, routes, adj, tickets: [] };
   map.tickets = data.tickets.map(([a, b], id) => ({ id, a, b, pts: shortest(map, a, b) }));
   built[cacheKey] = map;
   return map;
@@ -232,7 +236,7 @@ export function makeIronRoutes(seats, options) {
     map: map.id,
     rev: map.rev,
     seats: [...seats],
-    players: seats.map(seat => ({ seat, trains: 40, score: 0, hand: emptyHand(), tickets: [], pending: [] })),
+    players: seats.map(seat => ({ seat, trains: map.trains, score: 0, hand: emptyHand(), tickets: [], pending: [] })),
     cur: 0, phase: 'tickets', setup: true, minKeep: 2, turns: 0,
     deck, discard: [], market: [], tdeck: shuffle(map.tickets.map(ticket => ticket.id)),
     owner: {}, stations: {}, tunnel: null, final: null, over: null, log: [],

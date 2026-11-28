@@ -332,7 +332,30 @@ button.northstar-cell:not(:disabled):hover { background: #44788a; }
 .iron-preview .track { fill: none; stroke-width: 1; vector-effect: non-scaling-stroke; }
 .iron-preview .stop { fill: #fffaf0; stroke: #3a2f22; stroke-width: 2; }
 .sheet .segments.map-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.sheet .segments.map-options button { display: grid; gap: .3rem; padding: .4rem; text-align: center; }
+.sheet .segments.map-options .map-choice { position: relative; display: grid; min-width: 0; }
+.sheet .segments.map-options [role="radio"] { display: grid; gap: .3rem; padding: .4rem; text-align: center; }
+.sheet .segments.map-options [role="radio"] small { font-size: .74rem; font-weight: 650; }
+.sheet .segments.map-options [role="radio"][aria-checked="true"] small { color: inherit; }
+.sheet .segments.map-options .peek-btn { position: absolute; top: .55rem; right: .55rem; display: grid; place-items: center; width: 44px; min-height: 44px; padding: 0; border-color: rgba(40, 30, 20, .35); border-radius: 10px; background: rgba(250, 244, 230, .92); color: #2b2218; box-shadow: 0 3px 10px rgba(0, 0, 0, .3); }
+.sheet .segments.map-options .peek-btn svg { width: 20px; height: 20px; }
+@media (pointer: fine) {
+  .sheet .segments.map-options .peek-btn { width: 34px; min-height: 34px; }
+  .sheet .segments.map-options .peek-btn svg { width: 18px; height: 18px; }
+}
+/* Full-size map peek, opened over the setup sheet. The map fits the screen at its own aspect ratio. */
+.sheet.peek-sheet { width: min(1100px, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); }
+.peek-sheet[open] { flex-direction: column; gap: .75rem; padding: 1rem 1.1rem calc(1rem + env(safe-area-inset-bottom)); }
+.peek-head { display: flex; align-items: flex-start; gap: .75rem; }
+.peek-head > div { flex: 1 1 auto; min-width: 0; }
+.peek-head h2 { font-size: 1.4rem; }
+.peek-head p { margin: .25rem 0 0; color: var(--muted); font-size: .86rem; }
+.peek-head .sheet-close { position: static; flex: none; }
+.iron-peek { align-self: center; flex: none; width: min(100%, calc(max(180px, 100dvh - 15rem) * var(--ar, 1.6))); background: #a9c9d4; }
+.iron-peek svg { touch-action: none; cursor: grab; }
+.iron-peek .route .hit { pointer-events: none; }
+.peek-foot { display: flex; gap: .6rem; }
+.peek-foot button { min-height: 48px; }
+.peek-foot .primary { flex: 1 1 auto; }
 .iron-market { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
 .iron-card {
   position: relative; display: grid; place-items: center; align-content: center; gap: 2px; min-width: 0; min-height: 60px;

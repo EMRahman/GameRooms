@@ -238,7 +238,7 @@
                 </svg>
               </div>
             <div class="game-copy">
-              <div><h3>Iron Routes</h3><p>Claim rail lines across one of seven maps, link your secret destinations, and lay the longest track.</p></div>
+              <div><h3>Iron Routes</h3><p>Claim rail lines across one of ten maps, link your secret destinations, and lay the longest track.</p></div>
               <span class="play-arrow" aria-hidden="true">↗</span>
               <div class="game-meta"><span>2–5 players</span><span>Strategy</span><span>Touch ready</span></div>
             </div>
@@ -369,6 +369,17 @@
         <button class="primary" id="create-button" autofocus>Create room</button>
       </div>
     </form>
+  </dialog>
+  <dialog id="map-peek" class="sheet peek-sheet" aria-labelledby="peek-title">
+    <div class="peek-head">
+      <div><h2 id="peek-title">Map</h2><p id="peek-info"></p></div>
+      <button type="button" class="sheet-close" id="peek-close" aria-label="Close map preview">✕</button>
+    </div>
+    <div id="peek-map"></div>
+    <div class="peek-foot">
+      <button type="button" class="primary" id="peek-choose">Choose this map</button>
+      <button type="button" id="peek-back">Back</button>
+    </div>
   </dialog>
   <footer class="site-footer" id="site-footer">
     <p>Team Side Quests is free and open source.</p>
