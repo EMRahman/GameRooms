@@ -1,6 +1,7 @@
 // Iron Routes rules, adapted from the single-device game in `Games`.
 // The Durable Object owns the state. Browsers receive only ironRoutesView().
 import { MAPS } from './iron-routes-maps.js';
+import { MAPS_V1 } from './iron-routes-maps-v1.js';
 
 export { MAPS };
 export const MAP_IDS = Object.keys(MAPS);
@@ -14,12 +15,28 @@ export const CARD_KINDS = [...COLORS, 'loco'];
 
 const other = (route, city) => route.a === city ? route.b : route.a;
 
+// A route runs from city to city through the map's optional bend points, so tracks can follow
+// the land round water. Returns the points in map units.
+export function routePoints(data, a, b) {
+  const via = data.bends?.[`${a}-${b}`] ?? [];
+  const at = ([, lon, lat]) => data.proj(lon, lat);
+  return [at(data.cities[a]), ...via.map(([lon, lat]) => data.proj(lon, lat)), at(data.cities[b])];
+}
+
+export const pathLength = points => points.slice(1).reduce((sum, [x, y], i) => sum + Math.hypot(x - points[i][0], y - points[i][1]), 0);
+
+// The layout a room plays on: rooms keep the revision they started with.
+function mapData(id, rev) {
+  return rev === 1 && Object.hasOwn(MAPS_V1, id) ? MAPS_V1[id] : MAPS[id];
+}
+
 // Builds the cities, routes, tickets and adjacency of one map once per process.
 const built = {};
-export function ironMap(id) {
+export function ironMap(id, rev) {
   const key = Object.hasOwn(MAPS, id) ? id : DEFAULT_MAP;
-  if (built[key]) return built[key];
-  const data = MAPS[key];
+  const data = mapData(key, rev ?? MAPS[key].rev ?? 1);
+  const cacheKey = `${key}@${data.rev ?? 1}`;
+  if (built[cacheKey]) return built[cacheKey];
   const cities = {};
   for (const [code, city] of Object.entries(data.cities)) {
     const copy = [...city];
@@ -28,19 +45,18 @@ export function ironMap(id) {
   }
   const routes = [];
   for (const [a, b, c1, c2] of data.routes) {
-    const A = cities[a];
-    const B = cities[b];
-    const len = Math.max(1, Math.min(6, Math.round(Math.hypot(B.x - A.x, B.y - A.y) / 38)));
+    const pts = routePoints(data, a, b);
+    const len = Math.max(1, Math.min(6, Math.round(pathLength(pts) / (data.unit ?? 38))));
     const id = routes.length;
     const tunnel = data.tunnels.includes(`${a}-${b}`);
-    routes.push({ id, a, b, c: c1, len, tunnel, twin: c2 ? id + 1 : -1, side: c2 ? -1 : 0 });
-    if (c2) routes.push({ id: id + 1, a, b, c: c2, len, tunnel, twin: id, side: 1 });
+    routes.push({ id, a, b, c: c1, len, tunnel, pts, twin: c2 ? id + 1 : -1, side: c2 ? -1 : 0 });
+    if (c2) routes.push({ id: id + 1, a, b, c: c2, len, tunnel, pts, twin: id, side: 1 });
   }
   const adj = Object.fromEntries(Object.keys(cities).map(code => [code, []]));
   for (const route of routes) { adj[route.a].push(route); adj[route.b].push(route); }
-  const map = { id: key, name: data.name, blurb: data.blurb, data, cities, routes, adj, tickets: [] };
+  const map = { id: key, rev: data.rev ?? 1, name: data.name, blurb: data.blurb, data, cities, routes, adj, tickets: [] };
   map.tickets = data.tickets.map(([a, b], id) => ({ id, a, b, pts: shortest(map, a, b) }));
-  built[key] = map;
+  built[cacheKey] = map;
   return map;
 }
 
@@ -59,7 +75,8 @@ function shortest(map, from, to) {
 }
 
 // Rooms started before tunnels and stations existed have no `stations` and keep the original rules.
-const mapOf = state => ironMap(state.map ?? DEFAULT_MAP);
+// Rooms started before map revisions have no `rev` and keep the first layout.
+const mapOf = state => ironMap(state.map ?? DEFAULT_MAP, state.rev ?? 1);
 const hasStations = state => Boolean(state.stations);
 
 // ---------- Pure helpers shared by the server and the board ----------
@@ -213,6 +230,7 @@ export function makeIronRoutes(seats, options) {
   const deck = shuffle([...COLORS.flatMap(c => Array(12).fill(c)), ...Array(14).fill('loco')]);
   const state = {
     map: map.id,
+    rev: map.rev,
     seats: [...seats],
     players: seats.map(seat => ({ seat, trains: 40, score: 0, hand: emptyHand(), tickets: [], pending: [] })),
     cur: 0, phase: 'tickets', setup: true, minKeep: 2, turns: 0,
@@ -465,6 +483,7 @@ export function ironRoutesView(state, seat) {
   for (const row of state.over?.rows ?? []) scores[row.seat] = row.total;
   return {
     map: state.map ?? DEFAULT_MAP,
+    rev: state.rev ?? 1,
     seats: state.seats,
     turn: state.setup || state.over ? null : state.seats[state.cur],
     phase: state.phase,

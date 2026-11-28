@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  MAP_IDS, ironMap, makeIronRoutes, applyIronRoutes, ironRoutesView, payOptions, claimProblem, connected, endIronRoutes,
+  MAPS, MAP_IDS, ironMap, routePoints, pathLength, makeIronRoutes, applyIronRoutes, ironRoutesView, payOptions, claimProblem, connected, endIronRoutes,
   tunnelPayments, stationPayments,
 } from '../public/iron-routes-rules.js';
 import { roomOptions, messageLimit } from '../worker/protocol.js';
+import { MAPS_V1 } from '../public/iron-routes-maps-v1.js';
 
 const NA = ironMap('na');
 const ROUTES = NA.routes;
@@ -23,7 +24,7 @@ function finishSetup(state) {
 // claim the longest affordable route, otherwise draw.
 function autoplay(state) {
   const player = state.players[state.cur];
-  const map = ironMap(state.map);
+  const map = ironMap(state.map, state.rev);
   if (state.phase === 'tickets') return applyIronRoutes(state, player.seat, { action: 'tickets', keep: player.pending.slice(0, 1) });
   if (state.phase === 'tunnel') {
     const option = tunnelPayments(player.hand, state.tunnel)[0];
@@ -294,6 +295,8 @@ test('rooms started before tunnels and stations keep the original rules', () => 
   delete state.stations;
   delete state.tunnel;
   delete state.map;
+  delete state.rev;
+  const ROUTES = ironMap('na', 1).routes;
   const route = ROUTES.find(r => r.tunnel && r.c !== 'gray');
   const player = state.players[0];
   player.hand[route.c] = route.len;
@@ -305,4 +308,38 @@ test('rooms started before tunnels and stations keep the original rules', () => 
   assert.equal(view.map, 'na');
   endIronRoutes(state);
   assert.ok(state.over.rows.every(row => row.stationPoints === 0));
+});
+
+test('rooms started before map revision 2 keep the first layout', () => {
+  for (const id of Object.keys(MAPS_V1)) {
+    assert.equal(MAPS[id].rev, 2, `${id} is on revision 2`);
+    const state = makeIronRoutes([0, 1], { map: id });
+    assert.equal(state.rev, 2);
+    assert.equal(ironMap(id).routes.length, ironMap(id, 2).routes.length);
+    delete state.rev;
+    const view = ironRoutesView(state, 0);
+    assert.equal(view.rev, 1);
+    const old = ironMap(id, 1);
+    assert.equal(old.data, MAPS_V1[id]);
+    assert.equal(old.tickets.length, MAPS_V1[id].tickets.length);
+  }
+  assert.equal(makeIronRoutes([0, 1], { map: 'ch' }).rev, 1, 'maps without revisions are revision 1');
+  assert.equal(ironMap('ch', 1).data, MAPS.ch);
+});
+
+test('bent routes follow their waypoints and set their length by the map car length', () => {
+  for (const id of MAP_IDS) {
+    const data = MAPS[id];
+    const keys = new Set(data.routes.map(([a, b]) => `${a}-${b}`));
+    for (const key of Object.keys(data.bends ?? {})) assert.ok(keys.has(key), `${id} bend ${key} names a route`);
+    for (const key of data.tunnels) assert.ok(keys.has(key), `${id} tunnel ${key} names a route`);
+    for (const route of ironMap(id).routes) {
+      const points = routePoints(data, route.a, route.b);
+      assert.deepEqual(route.pts, points);
+      assert.equal(points.length, 2 + (data.bends?.[`${route.a}-${route.b}`]?.length ?? 0));
+      assert.equal(route.len, Math.max(1, Math.min(6, Math.round(pathLength(points) / (data.unit ?? 38)))));
+    }
+  }
+  const lille = ironMap('eu').routes.find(r => [r.a, r.b].includes('LON') && [r.a, r.b].includes('PAR'));
+  assert.equal(lille, undefined, 'Paris–London now runs via Lille');
 });
